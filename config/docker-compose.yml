@@ -1,0 +1,49 @@
+# Path: config/docker-compose.yml
+
+version: '3.8'
+
+services:
+  # MeetSync AI Application
+  meetsync-app:
+    build: ..
+    ports:
+      - "8080:8080"
+    environment:
+      - REDIS_HOST=redis
+      - FLASK_DEBUG=False
+    env_file:
+      - ../.env
+    depends_on:
+      - redis
+      - elasticsearch
+    volumes:
+      - ../logs:/app/logs
+    restart: unless-stopped
+
+  # Redis Cache
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    restart: unless-stopped
+    command: redis-server --appendonly yes
+
+  # Elasticsearch
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.11.0
+    environment:
+      - discovery.type=single-node
+      - "ES_JAVA_OPTS=-Xms2g -Xmx2g"
+      - xpack.security.enabled=false
+    ports:
+      - "9200:9200"
+      - "9300:9300"
+    volumes:
+      - es-data:/usr/share/elasticsearch/data
+    restart: unless-stopped
+
+volumes:
+  redis-data:
+  es-data:
