@@ -1,0 +1,3688 @@
+<!-- Path: frontend/templates/index.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MeetSync AI - Conversational Memory for Cross-Platform Meetings</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    <style>
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        .dashboard-card {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            padding: 24px;
+            margin-bottom: 24px;
+            transition: transform 0.2s;
+        }
+        .dashboard-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 8px 12px rgba(0, 0, 0, 0.15);
+        }
+        .nav-item {
+            cursor: pointer;
+            padding: 12px 24px;
+            transition: all 0.3s;
+            border-left: 4px solid transparent;
+        }
+        .nav-item:hover {
+            background: rgba(102, 126, 234, 0.1);
+            border-left-color: #667eea;
+        }
+        .nav-item.active {
+            background: rgba(102, 126, 234, 0.2);
+            border-left-color: #667eea;
+            font-weight: 600;
+        }
+        .stat-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 12px;
+            text-align: center;
+        }
+        .search-box {
+            background: white;
+            border-radius: 50px;
+            padding: 12px 24px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+        .meeting-card {
+            background: white;
+            border-radius: 8px;
+            padding: 16px;
+            margin-bottom: 12px;
+            border-left: 4px solid #667eea;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .meeting-card:hover {
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            transform: translateX(4px);
+        }
+        .badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+        .badge-positive { background: #10b981; color: white; }
+        .badge-neutral { background: #6b7280; color: white; }
+        .badge-negative { background: #ef4444; color: white; }
+        .loader {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 20px auto;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        #sidebar {
+            position: fixed;
+            left: 0;
+            top: 0;
+            height: 100vh;
+            width: 250px;
+            background: white;
+            box-shadow: 2px 0 8px rgba(0, 0, 0, 0.1);
+            overflow-y: auto;
+            z-index: 1000;
+        }
+        #main-content {
+            margin-left: 250px;
+            padding: 24px;
+            min-height: 100vh;
+        }
+        
+        /* Welcome Screen Styles */
+        #welcome-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100vh;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            z-index: 10000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            animation: fadeIn 0.5s ease-out;
+        }
+        
+        .welcome-container {
+            background: white;
+            border-radius: 24px;
+            padding: 48px;
+            max-width: 800px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            text-align: center;
+            animation: slideUp 0.6s ease-out;
+        }
+        
+        .welcome-logo {
+            font-size: 72px;
+            margin-bottom: 24px;
+            animation: pulse 2s infinite;
+        }
+        
+        .mode-selection {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 24px;
+            margin-top: 32px;
+        }
+        
+        .mode-card {
+            border: 3px solid #e5e7eb;
+            border-radius: 16px;
+            padding: 32px;
+            cursor: pointer;
+            transition: all 0.3s;
+            background: #f9fafb;
+        }
+        
+        .mode-card:hover {
+            border-color: #667eea;
+            transform: translateY(-4px);
+            box-shadow: 0 8px 16px rgba(102, 126, 234, 0.2);
+            background: white;
+        }
+        
+        .mode-card.selected {
+            border-color: #667eea;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        
+        .mode-icon {
+            font-size: 48px;
+            margin-bottom: 16px;
+        }
+        
+        .mode-card.selected .mode-icon {
+            animation: bounce 0.5s;
+        }
+        
+        .btn-start {
+            margin-top: 32px;
+            padding: 16px 48px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 50px;
+            font-size: 18px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+        }
+        
+        .btn-start:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.6);
+        }
+        
+        .btn-start:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        
+        .auth-form {
+            display: none;
+            margin-top: 24px;
+            text-align: left;
+            background: #f9fafb;
+            padding: 24px;
+            border-radius: 12px;
+        }
+        
+        .auth-form.active {
+            display: block;
+            animation: slideDown 0.3s ease-out;
+        }
+        
+        .form-group {
+            margin-bottom: 16px;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #374151;
+        }
+        
+        .form-group input {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #d1d5db;
+            border-radius: 8px;
+            font-size: 14px;
+        }
+        
+        .form-group input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        
+        .info-text {
+            background: #fef3c7;
+            border-left: 4px solid #f59e0b;
+            padding: 12px;
+            border-radius: 6px;
+            margin-top: 16px;
+            font-size: 14px;
+            color: #78350f;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        @keyframes slideDown {
+            from {
+                opacity: 0;
+                max-height: 0;
+            }
+            to {
+                opacity: 1;
+                max-height: 500px;
+            }
+        }
+        
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+        
+        @keyframes bounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+        
+        .fade-out {
+            animation: fadeOut 0.5s ease-out forwards;
+        }
+        
+        @keyframes fadeOut {
+            from { opacity: 1; }
+            to { opacity: 0; }
+        }
+    </style>
+</head>
+<body>
+    <!-- Welcome/Mode Selection Screen -->
+    <div id="welcome-screen">
+        <div class="welcome-container">
+            <div class="welcome-logo">
+                <i class="fas fa-brain"></i>
+            </div>
+            <h1 style="font-size: 48px; font-weight: bold; color: #667eea; margin-bottom: 16px;">
+                MeetSync AI
+            </h1>
+            <p style="font-size: 20px; color: #6b7280; margin-bottom: 32px;">
+                Conversational Memory for Cross-Platform Meetings
+            </p>
+            
+            <div style="background: #f0f9ff; border-left: 4px solid #3b82f6; padding: 16px; border-radius: 8px; margin-bottom: 24px;">
+                <p style="color: #1e3a8a; font-weight: 600; margin-bottom: 8px;">
+                    <i class="fas fa-info-circle"></i> Welcome to MeetSync AI
+                </p>
+                <p style="color: #1e40af; font-size: 14px;">
+                    An intelligent platform that aggregates, analyzes, and provides conversational access to meeting data across multiple platforms using AI-powered search and analytics.
+                </p>
+            </div>
+            
+            <h3 style="font-size: 24px; font-weight: 600; color: #374151; margin-bottom: 16px;">
+                Choose Your Mode
+            </h3>
+            
+            <div class="mode-selection">
+                <div class="mode-card" id="demo-mode-card" onclick="selectMode('demo')">
+                    <div class="mode-icon">
+                        <i class="fas fa-play-circle"></i>
+                    </div>
+                    <h4 style="font-size: 20px; font-weight: 600; margin-bottom: 8px;">Demo Mode</h4>
+                    <p style="font-size: 14px; opacity: 0.9;">
+                        Explore with sample data. No setup required. Perfect for testing and evaluation.
+                    </p>
+                    <div style="margin-top: 16px; font-size: 12px; opacity: 0.8;">
+                        <i class="fas fa-check"></i> Instant access<br>
+                        <i class="fas fa-check"></i> Sample meetings<br>
+                        <i class="fas fa-check"></i> All features enabled
+                    </div>
+                </div>
+                
+                <div class="mode-card" id="production-mode-card" onclick="selectMode('production')">
+                    <div class="mode-icon">
+                        <i class="fas fa-shield-alt"></i>
+                    </div>
+                    <h4 style="font-size: 20px; font-weight: 600; margin-bottom: 8px;">Production Mode</h4>
+                    <p style="font-size: 14px; opacity: 0.9;">
+                        Connect with real credentials. Full authentication and live data integration.
+                    </p>
+                    <div style="margin-top: 16px; font-size: 12px; opacity: 0.8;">
+                        <i class="fas fa-check"></i> Secure authentication<br>
+                        <i class="fas fa-check"></i> Real-time data sync<br>
+                        <i class="fas fa-check"></i> Production ready
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Authentication Form (shown when production mode selected) -->
+            <div id="auth-form" class="auth-form">
+                <h4 style="font-size: 18px; font-weight: 600; margin-bottom: 16px; color: #374151;">
+                    <i class="fas fa-lock"></i> Enter Your Credentials
+                </h4>
+                
+                <div class="form-group">
+                    <label for="prod-email">Email Address</label>
+                    <input type="email" id="prod-email" placeholder="user@company.com" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="prod-password">Password</label>
+                    <input type="password" id="prod-password" placeholder="Enter your password" required>
+                </div>
+                
+                <div class="info-text">
+                    <strong>Note:</strong> In production mode, you'll need valid credentials configured in your backend system. Make sure all services (BigQuery, Elasticsearch, Redis, etc.) are properly set up.
+                </div>
+            </div>
+            
+            <button class="btn-start" id="start-button" onclick="startApplication()" disabled>
+                <i class="fas fa-arrow-right"></i> Start Application
+            </button>
+            
+            <div style="margin-top: 24px; font-size: 12px; color: #9ca3af;">
+                <strong>Key Features:</strong> Multi-Platform Integration • AI-Powered Search • Smart Analytics • Calendar Sync • Collaboration Network • Meeting Insights
+            </div>
+        </div>
+    </div>
+
+    <!-- Sidebar Navigation -->
+    <div id="sidebar" style="display: none;">
+        <div style="padding: 24px; border-bottom: 1px solid #e5e7eb;">
+            <h1 style="font-size: 24px; font-weight: bold; color: #667eea;">
+                <i class="fas fa-brain"></i> MeetSync AI
+            </h1>
+            <p style="font-size: 12px; color: #6b7280; margin-top: 4px;">
+                Conversational Memory Platform
+            </p>
+            <div id="mode-indicator" style="margin-top: 8px; padding: 4px 8px; background: #f3f4f6; border-radius: 4px; font-size: 11px; text-align: center;">
+                <i class="fas fa-circle" style="font-size: 8px;"></i> <span id="current-mode">Loading...</span>
+            </div>
+        </div>
+        
+        <nav style="padding: 16px 0;">
+            <div class="nav-item active" onclick="showSection('overview')">
+                <i class="fas fa-dashboard"></i> Overview
+            </div>
+            <div class="nav-item" onclick="showSection('analytics')">
+                <i class="fas fa-chart-line"></i> Analytics
+            </div>
+            <div class="nav-item" onclick="showSection('ai-query')">
+                <i class="fas fa-robot"></i> AI Query
+            </div>
+            <div class="nav-item" onclick="showSection('meetings')">
+                <i class="fas fa-video"></i> Meetings
+            </div>
+            <div class="nav-item" onclick="showSection('calendar')">
+                <i class="fas fa-calendar"></i> Calendar
+            </div>
+            <div class="nav-item" onclick="showSection('network')">
+                <i class="fas fa-project-diagram"></i> Network
+            </div>
+            <div class="nav-item" onclick="showSection('visualizer')">
+                <i class="fas fa-eye"></i> Meeting Visualizer
+            </div>
+            <div class="nav-item" onclick="showSection('settings')">
+                <i class="fas fa-cog"></i> Settings
+            </div>
+        </nav>
+        
+        <div style="padding: 16px; border-top: 1px solid #e5e7eb; position: absolute; bottom: 0; width: 100%;">
+            <div style="display: flex; align-items: center; gap: 12px;">
+                <div style="width: 40px; height: 40px; border-radius: 50%; background: #667eea; display: flex; align-items: center; justify-content: center; color: white; font-weight: bold;">
+                    <span id="user-initial">U</span>
+                </div>
+                <div>
+                    <div style="font-weight: 600; font-size: 14px;" id="user-name">User</div>
+                    <div style="font-size: 12px; color: #6b7280;" id="user-email">user@example.com</div>
+                </div>
+            </div>
+            <button onclick="logout()" style="margin-top: 12px; width: 100%; padding: 8px; background: #ef4444; color: white; border: none; border-radius: 6px; cursor: pointer;">
+                <i class="fas fa-sign-out-alt"></i> Logout
+            </button>
+        </div>
+    </div>
+
+    <!-- Main Content Area -->
+    <div id="main-content" style="display: none;">
+        <!-- Overview Section -->
+        <div id="section-overview" class="content-section">
+            <h2 style="font-size: 32px; font-weight: bold; color: white; margin-bottom: 24px;">
+                Dashboard Overview
+            </h2>
+            
+            <!-- Stats Cards -->
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 24px; margin-bottom: 32px;">
+                <div class="stat-card">
+                    <div style="font-size: 48px; font-weight: bold;" id="stat-total-meetings">0</div>
+                    <div style="font-size: 14px; opacity: 0.9;">Total Meetings</div>
+                </div>
+                <div class="stat-card">
+                    <div style="font-size: 48px; font-weight: bold;" id="stat-upcoming">0</div>
+                    <div style="font-size: 14px; opacity: 0.9;">Upcoming Meetings</div>
+                </div>
+                <div class="stat-card">
+                    <div style="font-size: 48px; font-weight: bold;" id="stat-action-items">0</div>
+                    <div style="font-size: 14px; opacity: 0.9;">Pending Actions</div>
+                </div>
+                <div class="stat-card">
+                    <div style="font-size: 48px; font-weight: bold;" id="stat-collaborators">0</div>
+                    <div style="font-size: 14px; opacity: 0.9;">Collaborators</div>
+                </div>
+            </div>
+
+            <!-- Quick Actions -->
+            <div class="dashboard-card">
+                <h3 style="font-size: 20px; font-weight: bold; margin-bottom: 16px;">
+                    <i class="fas fa-bolt"></i> Quick Actions
+                </h3>
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px;">
+                    <button onclick="showSection('ai-query')" style="padding: 12px 24px; background: #667eea; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 600;">
+                        <i class="fas fa-search"></i> Search Meetings
+                    </button>
+                    <button onclick="showSection('calendar')" style="padding: 12px 24px; background: #10b981; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 600;">
+                        <i class="fas fa-plus"></i> Schedule Meeting
+                    </button>
+                    <button onclick="syncConnectors()" style="padding: 12px 24px; background: #f59e0b; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 600;">
+                        <i class="fas fa-sync"></i> Sync Data
+                    </button>
+                    <button onclick="showSection('network')" style="padding: 12px 24px; background: #8b5cf6; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 600;">
+                        <i class="fas fa-users"></i> View Network
+                    </button>
+                </div>
+            </div>
+
+            <!-- Recent Meetings -->
+            <div class="dashboard-card">
+                <h3 style="font-size: 20px; font-weight: bold; margin-bottom: 16px;">
+                    <i class="fas fa-history"></i> Recent Meetings
+                </h3>
+                <div id="recent-meetings-list">
+                    <div class="loader"></div>
+                </div>
+            </div>
+
+            <!-- Action Items -->
+            <div class="dashboard-card">
+                <h3 style="font-size: 20px; font-weight: bold; margin-bottom: 16px;">
+                    <i class="fas fa-tasks"></i> Your Action Items
+                </h3>
+                <div id="action-items-list">
+                    <div class="loader"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Analytics Section -->
+        <div id="section-analytics" class="content-section" style="display: none;">
+            <h2 style="font-size: 32px; font-weight: bold; color: white; margin-bottom: 24px;">
+                Meeting Analytics
+            </h2>
+
+            <div class="dashboard-card">
+                <h3 style="font-size: 20px; font-weight: bold; margin-bottom: 16px;">
+                    Filters
+                </h3>
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px;">
+                    <div>
+                        <label style="display: block; margin-bottom: 8px; font-weight: 600;">Start Date</label>
+                        <input type="date" id="analytics-start-date" style="width: 100%; padding: 8px; border: 1px solid #d1d5db; border-radius: 6px;">
+                    </div>
+                    <div>
+                        <label style="display: block; margin-bottom: 8px; font-weight: 600;">End Date</label>
+                        <input type="date" id="analytics-end-date" style="width: 100%; padding: 8px; border: 1px solid #d1d5db; border-radius: 6px;">
+                    </div>
+                    <div>
+                        <label style="display: block; margin-bottom: 8px; font-weight: 600;">Platform</label>
+                        <select id="analytics-platform" style="width: 100%; padding: 8px; border: 1px solid #d1d5db; border-radius: 6px;">
+                            <option value="">All Platforms</option>
+                            <option value="google_meet">Google Meet</option>
+                            <option value="zoom">Zoom</option>
+                            <option value="microsoft_teams">Microsoft Teams</option>
+                            <option value="slack">Slack</option>
+                        </select>
+                    </div>
+                    <div style="display: flex; align-items: flex-end;">
+                        <button onclick="loadAnalytics()" style="width: 100%; padding: 10px; background: #667eea; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 600;">
+                            <i class="fas fa-filter"></i> Apply Filters
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="dashboard-card">
+                <h3 style="font-size: 20px; font-weight: bold; margin-bottom: 16px;">Meeting Frequency</h3>
+                <div id="chart-meeting-frequency"></div>
+            </div>
+
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(400px, 1fr)); gap: 24px;">
+                <div class="dashboard-card">
+                    <h3 style="font-size: 20px; font-weight: bold; margin-bottom: 16px;">Platform Distribution</h3>
+                    <div id="chart-platform-distribution"></div>
+                </div>
+
+                <div class="dashboard-card">
+                    <h3 style="font-size: 20px; font-weight: bold; margin-bottom: 16px;">Sentiment Analysis</h3>
+                    <div id="chart-sentiment-distribution"></div>
+                </div>
+            </div>
+
+            <div class="dashboard-card">
+                <h3 style="font-size: 20px; font-weight: bold; margin-bottom: 16px;">Most Active Participants</h3>
+                <div id="chart-top-participants"></div>
+            </div>
+        </div>
+
+        <!-- AI Query Section -->
+        <div id="section-ai-query" class="content-section" style="display: none;">
+            <h2 style="font-size: 32px; font-weight: bold; color: white; margin-bottom: 24px;">
+                AI-Powered Query
+            </h2>
+
+            <div class="dashboard-card">
+                <h3 style="font-size: 20px; font-weight: bold; margin-bottom: 16px;">
+                    <i class="fas fa-brain"></i> Ask Anything About Your Meetings
+                </h3>
+                <p style="color: #6b7280; margin-bottom: 16px;">
+                    Use natural language to search and analyze your meeting history. Our AI understands context and provides intelligent insights.
+                </p>
+                
+                <div style="position: relative; margin-bottom: 16px;">
+                    <input 
+                        type="text" 
+                        id="ai-query-input" 
+                        placeholder="E.g., What were the key themes in product planning meetings from July to September?"
+                        style="width: 100%; padding: 16px 48px 16px 16px; border: 2px solid #d1d5db; border-radius: 12px; font-size: 16px;"
+                        onkeypress="if(event.key === 'Enter') executeAIQuery()"
+                    >
+                    <button 
+                        onclick="executeAIQuery()" 
+                        style="position: absolute; right: 8px; top: 50%; transform: translateY(-50%); padding: 8px 16px; background: #667eea; color: white; border: none; border-radius: 8px; cursor: pointer;">
+                        <i class="fas fa-paper-plane"></i>
+                    </button>
+                </div>
+
+                <div style="display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 16px;">
+                    <span style="font-size: 14px; color: #6b7280; margin-right: 8px;">Try these:</span>
+                    <button onclick="setQueryExample(0)" style="padding: 6px 12px; background: #f3f4f6; border: 1px solid #d1d5db; border-radius: 6px; cursor: pointer; font-size: 13px;">
+                        Key themes in planning meetings
+                    </button>
+                    <button onclick="setQueryExample(1)" style="padding: 6px 12px; background: #f3f4f6; border: 1px solid #d1d5db; border-radius: 6px; cursor: pointer; font-size: 13px;">
+                        Feature decisions timeline
+                    </button>
+                    <button onclick="setQueryExample(2)" style="padding: 6px 12px; background: #f3f4f6; border: 1px solid #d1d5db; border-radius: 6px; cursor: pointer; font-size: 13px;">
+                        Meetings with unresolved issues
+                    </button>
+                </div>
+
+                <div id="ai-query-results" style="margin-top: 24px;"></div>
+            </div>
+
+            <div id="search-results-container" style="margin-top: 24px;"></div>
+        </div>
+
+        <!-- Meetings Section -->
+        <div id="section-meetings" class="content-section" style="display: none;">
+            <h2 style="font-size: 32px; font-weight: bold; color: white; margin-bottom: 24px;">
+                All Meetings
+            </h2>
+
+            <div class="dashboard-card">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+                    <h3 style="font-size: 20px; font-weight: bold;">
+                        <i class="fas fa-video"></i> Meeting History
+                    </h3>
+                    <div style="display: flex; gap: 12px;">
+                        <input 
+                            type="text" 
+                            id="meeting-search" 
+                            placeholder="Search meetings..."
+                            style="padding: 8px 16px; border: 1px solid #d1d5db; border-radius: 6px; width: 300px;"
+                            oninput="searchMeetings()"
+                        >
+                        <select id="meeting-filter-platform" onchange="filterMeetings()" style="padding: 8px; border: 1px solid #d1d5db; border-radius: 6px;">
+                            <option value="">All Platforms</option>
+                            <option value="google_meet">Google Meet</option>
+                            <option value="zoom">Zoom</option>
+                            <option value="microsoft_teams">Microsoft Teams</option>
+                            <option value="slack">Slack</option>
+                        </select>
+                    </div>
+                </div>
+                <div id="meetings-list">
+                    <div class="loader"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Calendar Section -->
+        <div id="section-calendar" class="content-section" style="display: none;">
+            <h2 style="font-size: 32px; font-weight: bold; color: white; margin-bottom: 24px;">
+                Calendar & Scheduling
+            </h2>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px;">
+                <div class="dashboard-card">
+                    <h3 style="font-size: 20px; font-weight: bold; margin-bottom: 16px;">
+                        <i class="fas fa-calendar-alt"></i> Upcoming Meetings
+                    </h3>
+                    <div id="upcoming-meetings-list">
+                        <div class="loader"></div>
+                    </div>
+                </div>
+
+                <div class="dashboard-card">
+                    <h3 style="font-size: 20px; font-weight: bold; margin-bottom: 16px;">
+                        <i class="fas fa-plus-circle"></i> Schedule New Meeting
+                    </h3>
+                    <form onsubmit="createMeeting(event)">
+                        <div style="margin-bottom: 16px;">
+                            <label style="display: block; margin-bottom: 8px; font-weight: 600;">Title</label>
+                            <input type="text" id="meeting-title" required style="width: 100%; padding: 8px; border: 1px solid #d1d5db; border-radius: 6px;">
+                        </div>
+                        <div style="margin-bottom: 16px;">
+                            <label style="display: block; margin-bottom: 8px; font-weight: 600;">Description</label>
+                            <textarea id="meeting-description" rows="3" style="width: 100%; padding: 8px; border: 1px solid #d1d5db; border-radius: 6px;"></textarea>
+                        </div>
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px;">
+                            <div>
+                                <label style="display: block; margin-bottom: 8px; font-weight: 600;">Start Time</label>
+                                <input type="datetime-local" id="meeting-start" required style="width: 100%; padding: 8px; border: 1px solid #d1d5db; border-radius: 6px;">
+                            </div>
+                            <div>
+                                <label style="display: block; margin-bottom: 8px; font-weight: 600;">End Time</label>
+                                <input type="datetime-local" id="meeting-end" required style="width: 100%; padding: 8px; border: 1px solid #d1d5db; border-radius: 6px;">
+                            </div>
+                        </div>
+                        <div style="margin-bottom: 16px;">
+                            <label style="display: block; margin-bottom: 8px; font-weight: 600;">Attendees (comma-separated emails)</label>
+                            <input type="text" id="meeting-attendees" placeholder="user1@example.com, user2@example.com" style="width: 100%; padding: 8px; border: 1px solid #d1d5db; border-radius: 6px;">
+                        </div>
+                        <div style="margin-bottom: 16px;">
+                            <label style="display: block; margin-bottom: 8px; font-weight: 600;">Timezone</label>
+                            <select id="meeting-timezone" style="width: 100%; padding: 8px; border: 1px solid #d1d5db; border-radius: 6px;">
+                                <option value="UTC">UTC</option>
+                                <option value="America/Los_Angeles">Pacific Time</option>
+                                <option value="America/New_York">Eastern Time</option>
+                                <option value="Europe/London">London</option>
+                                <option value="Asia/Tokyo">Tokyo</option>
+                            </select>
+                        </div>
+                        <button type="submit" style="width: 100%; padding: 12px; background: #10b981; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 600;">
+                            <i class="fas fa-calendar-plus"></i> Create Meeting
+                        </button>
+                    </form>
+                </div>
+            </div>
+
+            <div class="dashboard-card" style="margin-top: 24px;">
+                <h3 style="font-size: 20px; font-weight: bold; margin-bottom: 16px;">
+                    <i class="fas fa-history"></i> Past Meetings (Last 30 Days)
+                </h3>
+                <div id="past-meetings-list">
+                    <div class="loader"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Network Section -->
+        <div id="section-network" class="content-section" style="display: none;">
+            <h2 style="font-size: 32px; font-weight: bold; color: white; margin-bottom: 24px;">
+                Collaboration Network
+            </h2>
+
+            <div class="dashboard-card">
+                <h3 style="font-size: 20px; font-weight: bold; margin-bottom: 16px;">
+                    <i class="fas fa-project-diagram"></i> Network Metrics
+                </h3>
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px;" id="network-metrics">
+                    <div class="loader"></div>
+                </div>
+            </div>
+
+            <div class="dashboard-card">
+                <h3 style="font-size: 20px; font-weight: bold; margin-bottom: 16px;">
+                    Interactive Collaboration Graph
+                </h3>
+                <p style="color: #6b7280; margin-bottom: 16px;">
+                    Click on nodes to see detailed collaboration information. Node size represents meeting count, edge thickness represents collaboration strength.
+                </p>
+                <div id="network-graph" style="height: 600px;">
+                    <!--<div class="loader"></div>-->
+                </div>
+            </div>
+
+            <div class="dashboard-card">
+                <h3 style="font-size: 20px; font-weight: bold; margin-bottom: 16px;">
+                    Top Collaborators
+                </h3>
+                <div id="top-collaborators-list">
+                    <div class="loader"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Meeting Visualizer Section -->
+        <div id="section-visualizer" class="content-section" style="display: none;">
+            <h2 style="font-size: 32px; font-weight: bold; color: white; margin-bottom: 24px;">
+                Meeting Visualizer
+            </h2>
+
+            <div class="dashboard-card">
+                <h3 style="font-size: 20px; font-weight: bold; margin-bottom: 16px;">
+                    Timeline Visualization
+                </h3>
+                <div style="margin-bottom: 16px;">
+                    <input 
+                        type="text" 
+                        id="timeline-query" 
+                        placeholder="Enter search query (e.g., 'product planning meetings')"
+                        style="width: 100%; padding: 12px; border: 1px solid #d1d5db; border-radius: 6px;"
+                    >
+                    <button onclick="generateTimeline()" style="margin-top: 12px; padding: 10px 24px; background: #667eea; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 600;">
+                        <i class="fas fa-chart-line"></i> Generate Timeline
+                    </button>
+                </div>
+                <div id="timeline-visualization" style="min-height: 400px;"></div>
+            </div>
+        </div>
+
+        <!-- Settings Section -->
+        <div id="section-settings" class="content-section" style="display: none;">
+            <h2 style="font-size: 32px; font-weight: bold; color: white; margin-bottom: 24px;">
+                Settings
+            </h2>
+
+            <div class="dashboard-card">
+                <h3 style="font-size: 20px; font-weight: bold; margin-bottom: 16px;">
+                    <i class="fas fa-bell"></i> Notification Preferences
+                </h3>
+                <form onsubmit="saveNotificationPreferences(event)">
+                    <div style="margin-bottom: 16px;">
+                        <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+                            <input type="checkbox" id="pref-email" checked>
+                            <span><i class="fas fa-envelope"></i> Email Notifications</span>
+                        </label>
+                    </div>
+                    <div style="margin-bottom: 16px;">
+                        <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+                            <input type="checkbox" id="pref-sms">
+                            <span><i class="fas fa-sms"></i> SMS Notifications</span>
+                        </label>
+                        <input type="tel" id="pref-phone" placeholder="Phone number" style="width: 100%; padding: 8px; border: 1px solid #d1d5db; border-radius: 6px; margin-top: 8px; margin-left: 24px;">
+                    </div>
+                    <div style="margin-bottom: 16px;">
+                        <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+                            <input type="checkbox" id="pref-whatsapp">
+                            <span><i class="fab fa-whatsapp"></i> WhatsApp Notifications</span>
+                        </label>
+                    </div>
+                    <div style="margin-bottom: 16px;">
+                        <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+                            <input type="checkbox" id="pref-push" checked>
+                            <span><i class="fas fa-mobile-alt"></i> Push Notifications</span>
+                        </label>
+                    </div>
+                    <button type="submit" style="padding: 10px 24px; background: #667eea; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 600;">
+                        <i class="fas fa-save"></i> Save Preferences
+                    </button>
+                </form>
+            </div>
+
+            <div class="dashboard-card">
+                <h3 style="font-size: 20px; font-weight: bold; margin-bottom: 16px;">
+                    <i class="fas fa-sync-alt"></i> Data Synchronization
+                </h3>
+                <p style="color: #6b7280; margin-bottom: 16px;">
+                    Manage connections to your meeting platforms and sync schedules.
+                </p>
+                <div id="connectors-list">
+                    <div class="loader"></div>
+                </div>
+                <button onclick="syncAllConnectors()" style="margin-top: 16px; padding: 10px 24px; background: #f59e0b; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 600;">
+                    <i class="fas fa-sync"></i> Sync All Data Now
+                </button>
+            </div>
+
+            <div class="dashboard-card">
+                <h3 style="font-size: 20px; font-weight: bold; margin-bottom: 16px;">
+                    <i class="fas fa-heartbeat"></i> System Health
+                </h3>
+                <div id="system-health">
+                    <div class="loader"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- JavaScript -->
+    <script>
+        // Global variables
+        let authToken = '';
+        let currentUser = {};
+        let appMode = ''; // 'demo' or 'production'
+        const API_BASE = window.location.origin + '/api';
+
+        // Example queries for AI search
+        const exampleQueries = [
+            "What were the key themes discussed in product planning meetings from July to September?",
+            "Generate a timeline of feature decisions made by the design org over the past 90 days",
+            "Show me meetings with confused tone AND unresolved issues"
+        ];
+
+        // ============================================================
+        // WELCOME SCREEN & MODE SELECTION
+        // ============================================================
+
+        let selectedMode = null;
+
+        function selectMode(mode) {
+            selectedMode = mode;
+            
+            // Update UI
+            document.getElementById('demo-mode-card').classList.remove('selected');
+            document.getElementById('production-mode-card').classList.remove('selected');
+            document.getElementById(`${mode}-mode-card`).classList.add('selected');
+            
+            // Show/hide auth form
+            const authForm = document.getElementById('auth-form');
+            if (mode === 'production') {
+                authForm.classList.add('active');
+            } else {
+                authForm.classList.remove('active');
+            }
+            
+            // Enable start button
+            document.getElementById('start-button').disabled = false;
+            
+            console.log(`Selected mode: ${mode}`);
+        }
+
+        async function startApplication() {
+            const startButton = document.getElementById('start-button');
+            startButton.disabled = true;
+            startButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Loading...';
+            
+            if (selectedMode === 'demo') {
+                await startDemoMode();
+            } else if (selectedMode === 'production') {
+                await startProductionMode();
+            }
+        }
+
+        async function startDemoMode() {
+            console.log('Starting Demo Mode...');
+            
+            appMode = 'demo';
+            
+            // Set demo credentials
+            authToken = 'demo_token_' + Date.now();
+            currentUser = {
+                user_id: 'demo_user_001',
+                email: 'alice@company.com',
+                name: 'Alice Johnson',
+                department: 'Engineering',
+                role: 'Senior Engineer'
+            };
+            
+            localStorage.setItem('authToken', authToken);
+            localStorage.setItem('currentUser', JSON.stringify(currentUser));
+            localStorage.setItem('appMode', 'demo');
+            
+            // Hide welcome screen with fade out
+            const welcomeScreen = document.getElementById('welcome-screen');
+            welcomeScreen.classList.add('fade-out');
+            
+            setTimeout(() => {
+                welcomeScreen.style.display = 'none';
+                
+                // Show main application
+                document.getElementById('sidebar').style.display = 'block';
+                document.getElementById('main-content').style.display = 'block';
+                
+                // Initialize dashboard
+                initializeDashboard();
+                
+                showNotification('Welcome to Demo Mode! Exploring with sample data.', 'success');
+            }, 500);
+        }
+
+        async function startProductionMode() {
+            console.log('Starting Production Mode...');
+            
+            const email = document.getElementById('prod-email').value;
+            const password = document.getElementById('prod-password').value;
+            
+            if (!email || !password) {
+                showNotification('Please enter both email and password', 'error');
+                document.getElementById('start-button').disabled = false;
+                document.getElementById('start-button').innerHTML = '<i class="fas fa-arrow-right"></i> Start Application';
+                return;
+            }
+            
+            appMode = 'production';
+            
+            try {
+                const response = await axios.post(`${API_BASE}/auth/login`, { 
+                    email: email, 
+                    password: password 
+                });
+                
+                console.log('Login response:', response.data);
+                
+                if (response.data.success) {
+                    authToken = response.data.token;
+                    currentUser = response.data.user;
+                    
+                    localStorage.setItem('authToken', authToken);
+                    localStorage.setItem('currentUser', JSON.stringify(currentUser));
+                    localStorage.setItem('appMode', 'production');
+                    
+                    axios.defaults.headers.common['Authorization'] = `Bearer ${authToken}`;
+                    
+                    // Hide welcome screen
+                    const welcomeScreen = document.getElementById('welcome-screen');
+                    welcomeScreen.classList.add('fade-out');
+                    
+                    setTimeout(() => {
+                        welcomeScreen.style.display = 'none';
+                        
+                        // Show main application
+                        document.getElementById('sidebar').style.display = 'block';
+                        document.getElementById('main-content').style.display = 'block';
+                        
+                        // Initialize dashboard
+                        initializeDashboard();
+                        
+                        showNotification(`Welcome ${currentUser.name}!`, 'success');
+                    }, 500);
+                } else {
+                    showNotification('Login failed: ' + response.data.error, 'error');
+                    document.getElementById('start-button').disabled = false;
+                    document.getElementById('start-button').innerHTML = '<i class="fas fa-arrow-right"></i> Start Application';
+                }
+            } catch (error) {
+                console.error('Login error:', error);
+                
+                if (error.code === 'ERR_NETWORK' || error.message.includes('Network Error')) {
+                    showNotification('Cannot connect to server. Backend may not be running. Switching to Demo Mode...', 'warning');
+                    setTimeout(() => {
+                        selectedMode = 'demo';
+                        startDemoMode();
+                    }, 2000);
+                } else {
+                    showNotification('Login failed: ' + (error.response?.data?.error || error.message), 'error');
+                    document.getElementById('start-button').disabled = false;
+                    document.getElementById('start-button').innerHTML = '<i class="fas fa-arrow-right"></i> Start Application';
+                }
+            }
+        }
+
+        function initializeDashboard() {
+            // Update mode indicator
+            const modeIndicator = document.getElementById('current-mode');
+            if (appMode === 'demo') {
+                modeIndicator.innerHTML = '<i class="fas fa-circle" style="color: #f59e0b;"></i> Demo Mode';
+            } else {
+                modeIndicator.innerHTML = '<i class="fas fa-circle" style="color: #10b981;"></i> Production Mode';
+            }
+            
+            // Update user info
+            document.getElementById('user-name').textContent = currentUser.name || 'User';
+            document.getElementById('user-email').textContent = currentUser.email || 'user@example.com';
+            document.getElementById('user-initial').textContent = (currentUser.name || 'U').charAt(0).toUpperCase();
+            
+            // Load dashboard data
+            if (appMode === 'demo') {
+                loadDemoData();
+            } else {
+                loadProductionData();
+            }
+        }
+
+        // ============================================================
+        // DEMO MODE DATA
+        // ============================================================
+
+        function loadDemoData() {
+            console.log('Loading demo data...');
+            
+            // Set demo stats
+            document.getElementById('stat-total-meetings').textContent = '156';
+            document.getElementById('stat-upcoming').textContent = '8';
+            document.getElementById('stat-action-items').textContent = '23';
+            document.getElementById('stat-collaborators').textContent = '42';
+            
+            // Load demo meetings
+            document.getElementById('recent-meetings-list').innerHTML = `
+                <div class="meeting-card" onclick="showDemoMeetingDetails('Product Planning Q1')">
+                    <div style="display: flex; justify-content: space-between; align-items: start;">
+                        <div style="flex: 1;">
+                            <h4 style="font-weight: 600; margin-bottom: 4px;">Product Planning Q1</h4>
+                            <div style="font-size: 14px; color: #6b7280;">
+                                <i class="fas fa-clock"></i> Dec 15, 2025, 2:00 PM
+                            </div>
+                            <div style="font-size: 14px; color: #6b7280; margin-top: 4px;">
+                                <i class="fas fa-users"></i> 6 participants | <i class="fas fa-video"></i> zoom
+                            </div>
+                        </div>
+                        <span class="badge badge-positive">Positive</span>
+                    </div>
+                </div>
+                <div class="meeting-card" onclick="showDemoMeetingDetails('Engineering Standup')">
+                    <div style="display: flex; justify-content: space-between; align-items: start;">
+                        <div style="flex: 1;">
+                            <h4 style="font-weight: 600; margin-bottom: 4px;">Engineering Standup</h4>
+                            <div style="font-size: 14px; color: #6b7280;">
+                                <i class="fas fa-clock"></i> Dec 14, 2025, 10:00 AM
+                            </div>
+                            <div style="font-size: 14px; color: #6b7280; margin-top: 4px;">
+                                <i class="fas fa-users"></i> 8 participants | <i class="fas fa-video"></i> google_meet
+                            </div>
+                        </div>
+                        <span class="badge badge-neutral">Neutral</span>
+                    </div>
+                </div>
+                <div class="meeting-card" onclick="showDemoMeetingDetails('Design Review')">
+                    <div style="display: flex; justify-content: space-between; align-items: start;">
+                        <div style="flex: 1;">
+                            <h4 style="font-weight: 600; margin-bottom: 4px;">Design Review</h4>
+                            <div style="font-size: 14px; color: #6b7280;">
+                                <i class="fas fa-clock"></i> Dec 13, 2025, 3:30 PM
+                            </div>
+                            <div style="font-size: 14px; color: #6b7280; margin-top: 4px;">
+                                <i class="fas fa-users"></i> 4 participants | <i class="fas fa-video"></i> microsoft_teams
+                            </div>
+                        </div>
+                        <span class="badge badge-positive">Positive</span>
+                    </div>
+                </div>
+                <div class="meeting-card" onclick="showDemoMeetingDetails('Marketing Strategy')">
+                    <div style="display: flex; justify-content: space-between; align-items: start;">
+                        <div style="flex: 1;">
+                            <h4 style="font-weight: 600; margin-bottom: 4px;">Marketing Strategy</h4>
+                            <div style="font-size: 14px; color: #6b7280;">
+                                <i class="fas fa-clock"></i> Dec 12, 2025, 1:00 PM
+                            </div>
+                            <div style="font-size: 14px; color: #6b7280; margin-top: 4px;">
+                                <i class="fas fa-users"></i> 5 participants | <i class="fas fa-video"></i> slack
+                            </div>
+                        </div>
+                        <span class="badge badge-neutral">Neutral</span>
+                    </div>
+                </div>
+                <div class="meeting-card" onclick="showDemoMeetingDetails('Customer Feedback')">
+                    <div style="display: flex; justify-content: space-between; align-items: start;">
+                        <div style="flex: 1;">
+                            <h4 style="font-weight: 600; margin-bottom: 4px;">Customer Feedback Session</h4>
+                            <div style="font-size: 14px; color: #6b7280;">
+                                <i class="fas fa-clock"></i> Dec 11, 2025, 4:00 PM
+                            </div>
+                            <div style="font-size: 14px; color: #6b7280; margin-top: 4px;">
+                                <i class="fas fa-users"></i> 7 participants | <i class="fas fa-video"></i> zoom
+                            </div>
+                        </div>
+                        <span class="badge badge-positive">Positive</span>
+                    </div>
+                </div>
+            `;
+            
+            // Load demo action items
+            document.getElementById('action-items-list').innerHTML = `
+                <div style="padding: 12px; background: #f9fafb; border-radius: 8px; margin-bottom: 8px;">
+                    <div style="display: flex; justify-content: space-between; align-items: start;">
+                        <div style="flex: 1;">
+                            <div style="font-weight: 600; margin-bottom: 4px;">Update product roadmap for Q1</div>
+                            <div style="font-size: 13px; color: #6b7280;">
+                                Due: Dec 20, 2025 | Priority: High
+                            </div>
+                        </div>
+                        <button onclick="showNotification('Demo mode: Action item completed!', 'success')" 
+                            style="padding: 6px 12px; background: #10b981; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 13px;">
+                            <i class="fas fa-check"></i> Complete
+                        </button>
+                    </div>
+                </div>
+                <div style="padding: 12px; background: #f9fafb; border-radius: 8px; margin-bottom: 8px;">
+                    <div style="display: flex; justify-content: space-between; align-items: start;">
+                        <div style="flex: 1;">
+                            <div style="font-weight: 600; margin-bottom: 4px;">Review design mockups</div>
+                            <div style="font-size: 13px; color: #6b7280;">
+                                Due: Dec 18, 2025 | Priority: Medium
+                            </div>
+                        </div>
+                        <button onclick="showNotification('Demo mode: Action item completed!', 'success')" 
+                            style="padding: 6px 12px; background: #10b981; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 13px;">
+                            <i class="fas fa-check"></i> Complete
+                        </button>
+                    </div>
+                </div>
+                <div style="padding: 12px; background: #f9fafb; border-radius: 8px; margin-bottom: 8px;">
+                    <div style="display: flex; justify-content: space-between; align-items: start;">
+                        <div style="flex: 1;">
+                            <div style="font-weight: 600; margin-bottom: 4px;">Prepare sprint planning docs</div>
+                            <div style="font-size: 13px; color: #6b7280;">
+                                Due: Dec 22, 2025 | Priority: Medium
+                            </div>
+                        </div>
+                        <button onclick="showNotification('Demo mode: Action item completed!', 'success')" 
+                            style="padding: 6px 12px; background: #10b981; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 13px;">
+                            <i class="fas fa-check"></i> Complete
+                        </button>
+                    </div>
+                </div>
+                <div style="padding: 12px; background: #f9fafb; border-radius: 8px; margin-bottom: 8px;">
+                    <div style="display: flex; justify-content: space-between; align-items: start;">
+                        <div style="flex: 1;">
+                            <div style="font-weight: 600; margin-bottom: 4px;">Follow up with customer feedback</div>
+                            <div style="font-size: 13px; color: #6b7280;">
+                                Due: Dec 25, 2025 | Priority: High
+                            </div>
+                        </div>
+                        <button onclick="showNotification('Demo mode: Action item completed!', 'success')" 
+                            style="padding: 6px 12px; background: #10b981; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 13px;">
+                            <i class="fas fa-check"></i> Complete
+                        </button>
+                    </div>
+                </div>
+            `;
+        }
+
+        function showDemoMeetingDetails(title) {
+            const demoMeetings = {
+                'Product Planning Q1': {
+                    title: 'Product Planning Q1',
+                    date: 'Dec 15, 2025, 2:00 PM',
+                    duration: '90 minutes',
+                    platform: 'Zoom',
+                    participants: ['alice@company.com', 'bob@company.com', 'charlie@company.com', 'diana@company.com', 'eve@company.com', 'frank@company.com'],
+                    summary: 'The team discussed Q1 priorities and feature roadmap. Key focus areas included user engagement improvements, performance optimizations, and new integration capabilities.',
+                    decisions: [
+                        'Approved feature X for Q1 release',
+                        'Allocated additional resources to performance team',
+                        'Scheduled weekly check-ins for Q1 progress'
+                    ],
+                    actionItems: [
+                        'Alice: Update product roadmap by Dec 20',
+                        'Bob: Prepare technical specifications',
+                        'Charlie: Create design mockups for new features'
+                    ],
+                    sentiment: 'Positive (85%)'
+                },
+                'Engineering Standup': {
+                    title: 'Engineering Standup',
+                    date: 'Dec 14, 2025, 10:00 AM',
+                    duration: '30 minutes',
+                    platform: 'Google Meet',
+                    participants: ['alice@company.com', 'frank@company.com', 'grace@company.com', 'henry@company.com', 'iris@company.com', 'bob@company.com', 'charlie@company.com', 'eve@company.com'],
+                    summary: 'Daily standup covering sprint progress, blockers, and upcoming tasks. Team reported good progress on current sprint goals.',
+                    decisions: [
+                        'Prioritize bug fixes over new features this week',
+                        'Schedule code review session for Friday'
+                    ],
+                    actionItems: [
+                        'Frank: Resolve database migration issue',
+                        'Grace: Complete API integration testing',
+                        'Henry: Update documentation'
+                    ],
+                    sentiment: 'Neutral (55%)'
+                },
+                'Design Review': {
+                    title: 'Design Review',
+                    date: 'Dec 13, 2025, 3:30 PM',
+                    duration: '60 minutes',
+                    platform: 'Microsoft Teams',
+                    participants: ['charlie@company.com', 'diana@company.com', 'alice@company.com', 'bob@company.com'],
+                    summary: 'Reviewed new UI designs for the dashboard redesign project. Team provided feedback on user flows and visual consistency.',
+                    decisions: [
+                        'Approved dashboard layout with minor modifications',
+                        'Scheduled user testing for next week'
+                    ],
+                    actionItems: [
+                        'Charlie: Incorporate feedback into designs',
+                        'Diana: Set up user testing sessions',
+                        'Alice: Review technical feasibility'
+                    ],
+                    sentiment: 'Positive (78%)'
+                },
+                'Marketing Strategy': {
+                    title: 'Marketing Strategy',
+                    date: 'Dec 12, 2025, 1:00 PM',
+                    duration: '45 minutes',
+                    platform: 'Slack',
+                    participants: ['diana@company.com', 'eve@company.com', 'frank@company.com', 'grace@company.com', 'henry@company.com'],
+                    summary: 'Discussed Q1 marketing initiatives and campaign strategies. Team reviewed analytics from recent campaigns and planned upcoming activities.',
+                    decisions: [
+                        'Launch social media campaign in January',
+                        'Increase content marketing budget by 15%',
+                        'Partner with industry influencers'
+                    ],
+                    actionItems: [
+                        'Diana: Create campaign proposal',
+                        'Eve: Analyze competitor strategies',
+                        'Frank: Prepare budget allocation'
+                    ],
+                    sentiment: 'Neutral (60%)'
+                },
+                'Customer Feedback': {
+                    title: 'Customer Feedback Session',
+                    date: 'Dec 11, 2025, 4:00 PM',
+                    duration: '75 minutes',
+                    platform: 'Zoom',
+                    participants: ['alice@company.com', 'bob@company.com', 'charlie@company.com', 'diana@company.com', 'eve@company.com', 'grace@company.com', 'iris@company.com'],
+                    summary: 'Gathered and analyzed customer feedback from recent product launches. Customers expressed high satisfaction with new features but requested improvements to onboarding.',
+                    decisions: [
+                        'Prioritize onboarding improvements',
+                        'Schedule follow-up calls with key customers',
+                        'Create customer advisory board'
+                    ],
+                    actionItems: [
+                        'Alice: Design improved onboarding flow',
+                        'Bob: Implement feedback tracking system',
+                        'Diana: Organize customer advisory board meeting'
+                    ],
+                    sentiment: 'Positive (82%)'
+                }
+            };
+            
+            const meeting = demoMeetings[title];
+            
+            const modal = document.createElement('div');
+            modal.style.cssText = 'position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 9999; display: flex; align-items: center; justify-content: center;';
+            modal.innerHTML = `
+                <div style="background: white; border-radius: 12px; padding: 32px; max-width: 800px; max-height: 80vh; overflow-y: auto;">
+                    <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 24px;">
+                        <h2 style="font-size: 24px; font-weight: bold;">${meeting.title}</h2>
+                        <button onclick="this.closest('div[style*=fixed]').remove()" style="background: none; border: none; font-size: 24px; cursor: pointer;">&times;</button>
+                    </div>
+                    
+                    <div style="margin-bottom: 16px;">
+                        <strong>Date:</strong> ${meeting.date}<br>
+                        <strong>Duration:</strong> ${meeting.duration}<br>
+                        <strong>Platform:</strong> ${meeting.platform}<br>
+                        <strong>Sentiment:</strong> ${meeting.sentiment}
+                    </div>
+                    
+                    <div style="margin-bottom: 16px;">
+                        <strong>Participants (${meeting.participants.length}):</strong>
+                        <div style="margin-top: 8px;">
+                            ${meeting.participants.map(p => `<span class="badge" style="background: #e5e7eb; color: #374151; margin: 4px;">${p}</span>`).join('')}
+                        </div>
+                    </div>
+                    
+                    <div style="margin-bottom: 16px;">
+                        <strong>Summary:</strong>
+                        <p style="margin-top: 8px; line-height: 1.6;">${meeting.summary}</p>
+                    </div>
+                    
+                    <div style="margin-bottom: 16px;">
+                        <strong>Decisions Made:</strong>
+                        <ul style="margin-top: 8px; padding-left: 20px;">
+                            ${meeting.decisions.map(d => `<li style="margin-bottom: 4px;">${d}</li>`).join('')}
+                        </ul>
+                    </div>
+                    
+                    <div style="margin-bottom: 16px;">
+                        <strong>Action Items:</strong>
+                        <ul style="margin-top: 8px; padding-left: 20px;">
+                            ${meeting.actionItems.map(a => `<li style="margin-bottom: 4px;">${a}</li>`).join('')}
+                        </ul>
+                    </div>
+                    
+                    <div style="background: #f0f9ff; padding: 12px; border-radius: 6px; border-left: 3px solid #3b82f6;">
+                        <small style="color: #1e40af;"><i class="fas fa-info-circle"></i> This is demo data. In production mode, you'll see actual meeting details from your organization.</small>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(modal);
+        }
+
+        // ============================================================
+        // PRODUCTION MODE DATA
+        // ============================================================
+
+        async function loadProductionData() {
+            console.log('Loading production data...');
+            await loadOverviewStats();
+            await loadRecentMeetings();
+            await loadActionItems();
+        }
+
+        async function loadOverviewStats() {
+            try {
+                const analyticsResponse = await axios.get(`${API_BASE}/analytics`);
+                if (analyticsResponse.data.success) {
+                    const analytics = analyticsResponse.data.analytics;
+                    document.getElementById('stat-total-meetings').textContent = 
+                        analytics.total_meetings?.[0]?.count || 0;
+                }
+                
+                const upcomingResponse = await axios.get(`${API_BASE}/calendar/upcoming?days=7`);
+                if (upcomingResponse.data.success) {
+                    document.getElementById('stat-upcoming').textContent = upcomingResponse.data.count || 0;
+                }
+                
+                const actionItemsResponse = await axios.get(`${API_BASE}/action-items?status=pending`);
+                if (actionItemsResponse.data.success) {
+                    document.getElementById('stat-action-items').textContent = actionItemsResponse.data.count || 0;
+                }
+                
+                const networkResponse = await axios.get(`${API_BASE}/network`);
+                if (networkResponse.data.success) {
+                    document.getElementById('stat-collaborators').textContent = 
+                        networkResponse.data.metrics?.total_nodes || 0;
+                }
+            } catch (error) {
+                console.error('Error loading overview stats:', error);
+                showNotification('Some stats could not be loaded', 'warning');
+            }
+        }
+
+        async function loadRecentMeetings() {
+            try {
+                const response = await axios.get(`${API_BASE}/calendar/past?days=7`);
+                const container = document.getElementById('recent-meetings-list');
+                
+                if (response.data.success && response.data.meetings.length > 0) {
+                    container.innerHTML = response.data.meetings.slice(0, 5).map(meeting => `
+                        <div class="meeting-card" onclick="showMeetingDetails('${meeting.event_id}')">
+                            <div style="display: flex; justify-content: space-between; align-items: start;">
+                                <div style="flex: 1;">
+                                    <h4 style="font-weight: 600; margin-bottom: 4px;">${meeting.title}</h4>
+                                    <div style="font-size: 14px; color: #6b7280;">
+                                        <i class="fas fa-clock"></i> ${formatDateTime(meeting.start_time)}
+                                    </div>
+                                    <div style="font-size: 14px; color: #6b7280; margin-top: 4px;">
+                                        <i class="fas fa-users"></i> ${meeting.attendees?.length || 0} participants
+                                    </div>
+                                </div>
+                                <span class="badge badge-${meeting.status === 'completed' ? 'positive' : 'neutral'}">
+                                    ${meeting.status || 'Completed'}
+                                </span>
+                            </div>
+                        </div>
+                    `).join('');
+                } else {
+                    container.innerHTML = '<p style="color: #6b7280; text-align: center; padding: 20px;">No recent meetings found.</p>';
+                }
+            } catch (error) {
+                console.error('Error loading recent meetings:', error);
+                document.getElementById('recent-meetings-list').innerHTML = 
+                    '<p style="color: #ef4444; text-align: center; padding: 20px;">Error loading meetings.</p>';
+            }
+        }
+
+        async function loadActionItems() {
+            try {
+                const response = await axios.get(`${API_BASE}/action-items?status=pending`);
+                const container = document.getElementById('action-items-list');
+                
+                if (response.data.success && response.data.action_items.length > 0) {
+                    container.innerHTML = response.data.action_items.slice(0, 5).map(item => `
+                        <div style="padding: 12px; background: #f9fafb; border-radius: 8px; margin-bottom: 8px;">
+                            <div style="display: flex; justify-content: space-between; align-items: start;">
+                                <div style="flex: 1;">
+                                    <div style="font-weight: 600; margin-bottom: 4px;">${item.description}</div>
+                                    <div style="font-size: 13px; color: #6b7280;">
+                                        Due: ${formatDate(item.due_date)} | Priority: ${item.priority}
+                                    </div>
+                                </div>
+                                <button onclick="completeActionItem('${item.action_id}')" 
+                                    style="padding: 6px 12px; background: #10b981; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 13px;">
+                                    <i class="fas fa-check"></i> Complete
+                                </button>
+                            </div>
+                        </div>
+                    `).join('');
+                } else {
+                    container.innerHTML = '<p style="color: #6b7280; text-align: center; padding: 20px;">No pending action items.</p>';
+                }
+            } catch (error) {
+                console.error('Error loading action items:', error);
+                document.getElementById('action-items-list').innerHTML = 
+                    '<p style="color: #ef4444; text-align: center; padding: 20px;">Error loading action items.</p>';
+            }
+        }
+
+        async function completeActionItem(actionId) {
+            if (appMode === 'demo') {
+                showNotification('Demo mode: Action item completed!', 'success');
+                return;
+            }
+            
+            try {
+                const response = await axios.post(`${API_BASE}/action-items/${actionId}/complete`);
+                if (response.data.success) {
+                    showNotification('Action item completed!', 'success');
+                    loadActionItems();
+                    loadOverviewStats();
+                }
+            } catch (error) {
+                console.error('Error completing action item:', error);
+                showNotification('Error completing action item', 'error');
+            }
+        }
+
+        // ============================================================
+        // NAVIGATION
+        // ============================================================
+
+        function showSection(sectionId) {
+            document.querySelectorAll('.content-section').forEach(section => {
+                section.style.display = 'none';
+            });
+            
+            document.querySelectorAll('.nav-item').forEach(item => {
+                item.classList.remove('active');
+            });
+            
+            document.getElementById(`section-${sectionId}`).style.display = 'block';
+            event.target.classList.add('active');
+            
+            switch(sectionId) {
+                case 'analytics':
+                    loadAnalytics();
+                    break;
+                case 'meetings':
+                    loadAllMeetings();
+                    break;
+                case 'calendar':
+                    loadCalendarData();
+                    break;
+                case 'network':
+                    loadNetworkData();
+                    break;
+                case 'settings':
+                    loadSettings();
+                    break;
+            }
+        }
+
+        // ============================================================
+        // ANALYTICS
+        // ============================================================
+
+        // Path: frontend/templates/index.html
+// Find the loadAnalytics() function and replace it completely:
+
+async function loadAnalytics() {
+    const startDate = document.getElementById('analytics-start-date')?.value;
+    const endDate = document.getElementById('analytics-end-date')?.value;
+    const platform = document.getElementById('analytics-platform')?.value;
+    
+    if (appMode === 'demo') {
+        loadDemoAnalytics(startDate, endDate, platform);
+        return;
+    }
+    
+    const filters = {};
+    if (startDate) filters.date_start = startDate;
+    if (endDate) filters.date_end = endDate;
+    if (platform) filters.platform = platform;
+    
+    try {
+        const response = await axios.get(`${API_BASE}/analytics`, { params: filters });
+        
+        if (response.data.success) {
+            const analytics = response.data.analytics;
+            renderAnalyticsCharts(analytics);
+        }
+        
+        const vizResponse = await axios.get(`${API_BASE}/analytics/visualizations`);
+        if (vizResponse.data.success) {
+            const visualizations = vizResponse.data.visualizations;
+            
+            if (visualizations.meeting_frequency) {
+                Plotly.newPlot('chart-meeting-frequency', 
+                    JSON.parse(visualizations.meeting_frequency).data,
+                    JSON.parse(visualizations.meeting_frequency).layout
+                );
+            }
+            
+            if (visualizations.platform_distribution) {
+                Plotly.newPlot('chart-platform-distribution', 
+                    JSON.parse(visualizations.platform_distribution).data,
+                    JSON.parse(visualizations.platform_distribution).layout
+                );
+            }
+            
+            if (visualizations.sentiment_distribution) {
+                Plotly.newPlot('chart-sentiment-distribution', 
+                    JSON.parse(visualizations.sentiment_distribution).data,
+                    JSON.parse(visualizations.sentiment_distribution).layout
+                );
+            }
+            
+            if (visualizations.top_participants) {
+                Plotly.newPlot('chart-top-participants', 
+                    JSON.parse(visualizations.top_participants).data,
+                    JSON.parse(visualizations.top_participants).layout
+                );
+            }
+        }
+    } catch (error) {
+        console.error('Error loading analytics:', error);
+        showNotification('Error loading analytics', 'error');
+    }
+}
+
+function loadDemoAnalytics(startDate, endDate, platform) {
+    // Generate filtered demo data
+    const allMeetings = generateAllDemoMeetings();
+    
+    // Apply filters
+    let filteredMeetings = allMeetings;
+    
+    if (startDate) {
+        filteredMeetings = filteredMeetings.filter(m => new Date(m.date) >= new Date(startDate));
+    }
+    
+    if (endDate) {
+        filteredMeetings = filteredMeetings.filter(m => new Date(m.date) <= new Date(endDate));
+    }
+    
+    if (platform) {
+        filteredMeetings = filteredMeetings.filter(m => m.platform === platform);
+    }
+    
+    // Show filter summary
+    showFilterSummary(filteredMeetings.length, allMeetings.length, startDate, endDate, platform);
+    
+    // Generate charts with filtered data
+    generateFilteredCharts(filteredMeetings);
+}
+
+function generateAllDemoMeetings() {
+    const meetings = [];
+    const platforms = ['zoom', 'google_meet', 'microsoft_teams', 'slack'];
+    const startDate = new Date('2025-09-01');
+    const endDate = new Date('2025-12-15');
+    
+    // Generate meetings for each day
+    for (let d = new Date(startDate); d <= endDate; d.setDate(d.getDate() + 1)) {
+        const numMeetings = Math.floor(Math.random() * 5) + 3; // 3-7 meetings per day
+        
+        for (let i = 0; i < numMeetings; i++) {
+            meetings.push({
+                date: new Date(d).toISOString().split('T')[0],
+                platform: platforms[Math.floor(Math.random() * platforms.length)],
+                participants: Math.floor(Math.random() * 8) + 3,
+                sentiment: Math.random() * 0.6 + 0.3 // 0.3 to 0.9
+            });
+        }
+    }
+    
+    return meetings;
+}
+
+function showFilterSummary(filteredCount, totalCount, startDate, endDate, platform) {
+    const existingSummary = document.querySelector('.filter-summary');
+    if (existingSummary) {
+        existingSummary.remove();
+    }
+    
+    if (!startDate && !endDate && !platform) {
+        return; // No filters applied
+    }
+    
+    const summaryDiv = document.createElement('div');
+    summaryDiv.className = 'filter-summary';
+    summaryDiv.style.cssText = 'background: #dbeafe; border-left: 4px solid #3b82f6; padding: 16px; border-radius: 8px; margin: 16px 0; font-size: 14px; color: #1e40af;';
+    
+    let filterText = '<strong><i class="fas fa-filter"></i> Active Filters:</strong> ';
+    const filters = [];
+    
+    if (startDate) filters.push(`Start: ${new Date(startDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}`);
+    if (endDate) filters.push(`End: ${new Date(endDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}`);
+    if (platform) {
+        const platformNames = {
+            'zoom': 'Zoom',
+            'google_meet': 'Google Meet',
+            'microsoft_teams': 'Microsoft Teams',
+            'slack': 'Slack'
+        };
+        filters.push(`Platform: ${platformNames[platform]}`);
+    }
+    
+    filterText += filters.join(' | ');
+    filterText += `<br><strong>Results:</strong> Showing ${filteredCount} of ${totalCount} meetings`;
+    
+    summaryDiv.innerHTML = filterText + ` <button onclick="clearAnalyticsFilters()" style="margin-left: 16px; padding: 4px 12px; background: #3b82f6; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 12px;"><i class="fas fa-times"></i> Clear Filters</button>`;
+    
+    const analyticsCard = document.querySelector('#section-analytics .dashboard-card');
+    analyticsCard.parentNode.insertBefore(summaryDiv, analyticsCard.nextSibling);
+}
+
+function clearAnalyticsFilters() {
+    document.getElementById('analytics-start-date').value = '';
+    document.getElementById('analytics-end-date').value = '';
+    document.getElementById('analytics-platform').value = '';
+    loadAnalytics();
+}
+
+function generateFilteredCharts(meetings) {
+    if (meetings.length === 0) {
+        // Show "no data" message
+        ['chart-meeting-frequency', 'chart-platform-distribution', 'chart-sentiment-distribution', 'chart-top-participants'].forEach(chartId => {
+            document.getElementById(chartId).innerHTML = `
+                <div style="text-align: center; padding: 60px; color: #6b7280;">
+                    <i class="fas fa-chart-bar" style="font-size: 48px; margin-bottom: 16px; opacity: 0.3;"></i>
+                    <p>No meetings found for selected filters</p>
+                </div>
+            `;
+        });
+        return;
+    }
+    
+    // 1. Meeting Frequency Chart
+    const dateGroups = {};
+    meetings.forEach(m => {
+        const date = m.date;
+        dateGroups[date] = (dateGroups[date] || 0) + 1;
+    });
+    
+    const sortedDates = Object.keys(dateGroups).sort();
+    const frequencyData = [{
+        x: sortedDates.map(d => new Date(d)),
+        y: sortedDates.map(d => dateGroups[d]),
+        type: 'scatter',
+        mode: 'lines+markers',
+        marker: { 
+            color: '#667eea',
+            size: 8
+        },
+        line: {
+            color: '#667eea',
+            width: 3
+        },
+        fill: 'tozeroy',
+        fillcolor: 'rgba(102, 126, 234, 0.1)'
+    }];
+    
+    Plotly.newPlot('chart-meeting-frequency', frequencyData, {
+        title: 'Meeting Frequency Over Time',
+        xaxis: { 
+            title: 'Date',
+            gridcolor: '#e5e7eb'
+        },
+        yaxis: { 
+            title: 'Number of Meetings',
+            gridcolor: '#e5e7eb'
+        },
+        plot_bgcolor: '#f9fafb',
+        paper_bgcolor: 'white',
+        height: 350
+    }, {
+        responsive: true,
+        displayModeBar: true,
+        displaylogo: false
+    });
+    
+    // 2. Platform Distribution Chart
+    const platformCounts = {};
+    meetings.forEach(m => {
+        platformCounts[m.platform] = (platformCounts[m.platform] || 0) + 1;
+    });
+    
+    const platformNames = {
+        'zoom': 'Zoom',
+        'google_meet': 'Google Meet',
+        'microsoft_teams': 'Microsoft Teams',
+        'slack': 'Slack'
+    };
+    
+    const platformData = [{
+        values: Object.values(platformCounts),
+        labels: Object.keys(platformCounts).map(p => platformNames[p]),
+        type: 'pie',
+        marker: { 
+            colors: ['#667eea', '#10b981', '#f59e0b', '#8b5cf6'],
+            line: {
+                color: 'white',
+                width: 2
+            }
+        },
+        textinfo: 'label+percent',
+        textposition: 'outside',
+        automargin: true
+    }];
+    
+    Plotly.newPlot('chart-platform-distribution', platformData, {
+        title: 'Meetings by Platform',
+        height: 400,
+        showlegend: true,
+        paper_bgcolor: 'white'
+    }, {
+        responsive: true,
+        displayModeBar: false
+    });
+    
+    // 3. Sentiment Distribution Chart
+    const sentimentCategories = { positive: 0, neutral: 0, negative: 0 };
+    meetings.forEach(m => {
+        if (m.sentiment >= 0.6) sentimentCategories.positive++;
+        else if (m.sentiment >= 0.4) sentimentCategories.neutral++;
+        else sentimentCategories.negative++;
+    });
+    
+    const sentimentData = [{
+        x: ['Positive', 'Neutral', 'Negative'],
+        y: [sentimentCategories.positive, sentimentCategories.neutral, sentimentCategories.negative],
+        type: 'bar',
+        marker: { 
+            color: ['#10b981', '#6b7280', '#ef4444'],
+            line: {
+                color: 'white',
+                width: 2
+            }
+        },
+        text: [sentimentCategories.positive, sentimentCategories.neutral, sentimentCategories.negative],
+        textposition: 'auto'
+    }];
+    
+    Plotly.newPlot('chart-sentiment-distribution', sentimentData, {
+        title: 'Meeting Sentiment Distribution',
+        xaxis: { title: 'Sentiment' },
+        yaxis: { 
+            title: 'Number of Meetings',
+            gridcolor: '#e5e7eb'
+        },
+        plot_bgcolor: '#f9fafb',
+        paper_bgcolor: 'white',
+        height: 400
+    }, {
+        responsive: true,
+        displayModeBar: false
+    });
+    
+    // 4. Top Participants Chart (simulated)
+    const participants = [
+        'alice@company.com', 'bob@company.com', 'charlie@company.com', 
+        'diana@company.com', 'eve@company.com', 'frank@company.com',
+        'grace@company.com', 'henry@company.com', 'iris@company.com', 'jack@company.com'
+    ];
+    
+    // Calculate participation based on filtered meetings
+    const participationCounts = participants.map(p => {
+        // Simulate participation proportional to filtered meetings
+        return Math.floor((meetings.length / 10) * (Math.random() * 0.5 + 0.5));
+    });
+    
+    const sortedIndices = participationCounts
+        .map((count, index) => ({ count, index }))
+        .sort((a, b) => b.count - a.count)
+        .slice(0, 10);
+    
+    const participantsData = [{
+        x: sortedIndices.map(item => participationCounts[item.index]),
+        y: sortedIndices.map(item => participants[item.index]),
+        type: 'bar',
+        orientation: 'h',
+        marker: { 
+            color: '#667eea',
+            line: {
+                color: 'white',
+                width: 1
+            }
+        },
+        text: sortedIndices.map(item => participationCounts[item.index]),
+        textposition: 'auto'
+    }];
+    
+    Plotly.newPlot('chart-top-participants', participantsData, {
+        title: 'Most Active Participants',
+        xaxis: { 
+            title: 'Meeting Count',
+            gridcolor: '#e5e7eb'
+        },
+        yaxis: { 
+            automargin: true
+        },
+        plot_bgcolor: '#f9fafb',
+        paper_bgcolor: 'white',
+        height: 500,
+        margin: { l: 150 }
+    }, {
+        responsive: true,
+        displayModeBar: false
+    });
+    
+    // Add summary statistics
+    addAnalyticsSummary(meetings);
+}
+
+function addAnalyticsSummary(meetings) {
+    const avgSentiment = meetings.reduce((sum, m) => sum + m.sentiment, 0) / meetings.length;
+    const avgParticipants = meetings.reduce((sum, m) => sum + m.participants, 0) / meetings.length;
+    
+    const platformCounts = {};
+    meetings.forEach(m => {
+        platformCounts[m.platform] = (platformCounts[m.platform] || 0) + 1;
+    });
+    const mostUsedPlatform = Object.entries(platformCounts).sort((a, b) => b[1] - a[1])[0];
+    
+    const platformNames = {
+        'zoom': 'Zoom',
+        'google_meet': 'Google Meet',
+        'microsoft_teams': 'Microsoft Teams',
+        'slack': 'Slack'
+    };
+    
+    const dateRange = meetings.length > 0 ? 
+        `${new Date(Math.min(...meetings.map(m => new Date(m.date)))).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} - ${new Date(Math.max(...meetings.map(m => new Date(m.date)))).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}` :
+        'N/A';
+    
+    const existingSummary = document.querySelector('.analytics-summary');
+    if (existingSummary) {
+        existingSummary.remove();
+    }
+    
+    const summaryHtml = `
+        <div class="analytics-summary" style="margin-top: 24px;">
+            <div class="dashboard-card">
+                <h3 style="font-size: 18px; font-weight: bold; margin-bottom: 16px;">
+                    <i class="fas fa-chart-pie"></i> Summary Statistics
+                </h3>
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px;">
+                    <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 16px; border-radius: 8px; color: white;">
+                        <div style="font-size: 32px; font-weight: bold;">${meetings.length}</div>
+                        <div style="font-size: 13px; opacity: 0.9;">Total Meetings</div>
+                    </div>
+                    <div style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); padding: 16px; border-radius: 8px; color: white;">
+                        <div style="font-size: 32px; font-weight: bold;">${(avgSentiment * 100).toFixed(0)}%</div>
+                        <div style="font-size: 13px; opacity: 0.9;">Avg Sentiment</div>
+                    </div>
+                    <div style="background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); padding: 16px; border-radius: 8px; color: white;">
+                        <div style="font-size: 32px; font-weight: bold;">${avgParticipants.toFixed(1)}</div>
+                        <div style="font-size: 13px; opacity: 0.9;">Avg Participants</div>
+                    </div>
+                    <div style="background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%); padding: 16px; border-radius: 8px; color: white;">
+                        <div style="font-size: 28px; font-weight: bold;">${platformNames[mostUsedPlatform[0]]}</div>
+                        <div style="font-size: 13px; opacity: 0.9;">Most Used Platform</div>
+                    </div>
+                </div>
+                <div style="margin-top: 16px; background: #f9fafb; padding: 12px; border-radius: 8px; border-left: 4px solid #667eea;">
+                    <strong style="color: #374151;"><i class="fas fa-calendar-alt"></i> Date Range:</strong> 
+                    <span style="color: #6b7280;">${dateRange}</span>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    const lastChart = document.getElementById('chart-top-participants').parentElement;
+    lastChart.insertAdjacentHTML('afterend', summaryHtml);
+}
+
+        // ============================================================
+        // AI QUERY
+        // ============================================================
+
+        function setQueryExample(index) {
+            document.getElementById('ai-query-input').value = exampleQueries[index];
+        }
+
+        async function executeAIQuery() {
+            const query = document.getElementById('ai-query-input').value.trim();
+            if (!query) return;
+            
+            const resultsContainer = document.getElementById('ai-query-results');
+            resultsContainer.innerHTML = '<div class="loader"></div>';
+            
+            if (appMode === 'demo') {
+                executeDemoQuery(query, resultsContainer);
+                return;
+            }
+            
+            try {
+                const response = await axios.post(`${API_BASE}/query`, { query });
+                
+                if (response.data) {
+                    const data = response.data;
+                    resultsContainer.innerHTML = `
+                        <div style="background: #f0f9ff; border-left: 4px solid #3b82f6; padding: 16px; border-radius: 8px; margin-bottom: 16px;">
+                            <h4 style="font-weight: 600; margin-bottom: 8px;">
+                                <i class="fas fa-robot"></i> AI Response
+                            </h4>
+                            <div style="white-space: pre-wrap; line-height: 1.6;">${data.response}</div>
+                        </div>
+                        
+                        ${data.sources && data.sources.length > 0 ? `
+                            <div style="margin-top: 16px;">
+                                <h4 style="font-weight: 600; margin-bottom: 12px;">Sources (${data.sources.length} meetings)</h4>
+                                <div style="font-size: 13px; color: #6b7280;">
+                                    ${data.sources.slice(0, 5).map(source => `<span class="badge" style="background: #e5e7eb; color: #374151; margin-right: 8px;">${source}</span>`).join('')}
+                                </div>
+                            </div>
+                        ` : ''}
+                        
+                        <div style="margin-top: 16px; font-size: 12px; color: #9ca3af;">
+                            Query processed using: ${data.strategy} | Intent: ${data.intent?.intent || 'general'}
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                console.error('Error executing AI query:', error);
+                resultsContainer.innerHTML = `
+                    <div style="background: #fef2f2; border-left: 4px solid #ef4444; padding: 16px; border-radius: 8px;">
+                        <p style="color: #b91c1c;">Error processing query. Please try again.</p>
+                    </div>
+                `;
+            }
+        }
+
+        function executeDemoQuery(query, container) {
+            setTimeout(() => {
+                const demoResponses = {
+                    'planning': 'Based on product planning meetings from the past quarter, the key themes were: 1) User experience improvements with focus on onboarding, 2) Performance optimization across all platforms, 3) Integration capabilities with third-party tools, and 4) Mobile-first approach for new features. The team showed strong alignment on prioritizing user feedback and data-driven decisions.',
+                    'timeline': 'Feature decision timeline for the past 90 days shows progressive evolution: Early October - Approved dashboard redesign project; Mid-October - Decided to implement API v2 with breaking changes; Late October - Greenlit mobile app development; Early November - Approved integration with Slack and Teams; Mid-November - Decided to enhance search capabilities with AI; Late November - Approved security audit and compliance improvements.',
+                    'unresolved': 'Meetings with unresolved issues include: 1) Infrastructure Scaling Discussion (Nov 28) - Database migration strategy still under review, 2) API Authentication Meeting (Nov 15) - OAuth implementation approach pending final decision, 3) Mobile Strategy Session (Oct 30) - Platform prioritization (iOS vs Android first) remains open.'
+                };
+                
+                let response = 'Based on your query, ';
+                
+                if (query.toLowerCase().includes('theme') || query.toLowerCase().includes('planning')) {
+                    response += demoResponses.planning;
+                } else if (query.toLowerCase().includes('timeline') || query.toLowerCase().includes('decision')) {
+                    response += demoResponses.timeline;
+                } else if (query.toLowerCase().includes('unresolved') || query.toLowerCase().includes('issue')) {
+                    response += demoResponses.unresolved;
+                } else {
+                    response += 'I analyzed your meetings and found relevant discussions across multiple sessions. The data shows consistent engagement from your team with average meeting duration of 45 minutes and positive sentiment scores. Key action items are being tracked and completed on schedule.';
+                }
+                
+                container.innerHTML = `
+                    <div style="background: #f0f9ff; border-left: 4px solid #3b82f6; padding: 16px; border-radius: 8px; margin-bottom: 16px;">
+                        <h4 style="font-weight: 600; margin-bottom: 8px;">
+                            <i class="fas fa-robot"></i> AI Response (Demo Mode)
+                        </h4>
+                        <div style="white-space: pre-wrap; line-height: 1.6;">${response}</div>
+                    </div>
+                    
+                    <div style="margin-top: 16px;">
+                        <h4 style="font-weight: 600; margin-bottom: 12px;">Sources (8 meetings)</h4>
+                        <div style="font-size: 13px; color: #6b7280;">
+                            <span class="badge" style="background: #e5e7eb; color: #374151; margin-right: 8px;">meeting_001</span>
+                            <span class="badge" style="background: #e5e7eb; color: #374151; margin-right: 8px;">meeting_015</span>
+                            <span class="badge" style="background: #e5e7eb; color: #374151; margin-right: 8px;">meeting_023</span>
+                            <span class="badge" style="background: #e5e7eb; color: #374151; margin-right: 8px;">meeting_034</span>
+                            <span class="badge" style="background: #e5e7eb; color: #374151; margin-right: 8px;">meeting_042</span>
+                        </div>
+                    </div>
+                    
+                    <div style="background: #fef3c7; padding: 12px; border-radius: 6px; margin-top: 16px; font-size: 13px; color: #78350f;">
+                        <i class="fas fa-info-circle"></i> This is a demo response. In production mode, the AI will analyze your actual meeting data using advanced NLP and provide precise insights.
+                    </div>
+                `;
+            }, 1000);
+        }
+
+        // ============================================================
+        // MEETINGS
+        // ============================================================
+
+        async function loadAllMeetings() {
+            if (appMode === 'demo') {
+                loadDemoMeetings();
+                return;
+            }
+            
+            const container = document.getElementById('meetings-list');
+            container.innerHTML = '<div class="loader"></div>';
+            
+            try {
+                const response = await axios.post(`${API_BASE}/search`, {
+                    query: '*',
+                    size: 50
+                });
+                
+                if (response.data.success && response.data.results.length > 0) {
+                    container.innerHTML = response.data.results.map(meeting => `
+                        <div class="meeting-card" onclick="showMeetingDetails('${meeting.meeting_id}')">
+                            <div style="display: flex; justify-content: space-between; align-items: start;">
+                                <div style="flex: 1;">
+                                    <h4 style="font-weight: 600; margin-bottom: 4px;">${meeting.title || 'Untitled'}</h4>
+                                    <div style="font-size: 14px; color: #6b7280; margin-bottom: 8px;">
+                                        <i class="fas fa-clock"></i> ${formatDateTime(meeting.start_time)}
+                                        <span style="margin-left: 16px;">
+                                            <i class="fas fa-users"></i> ${meeting.participants?.length || 0} participants
+                                        </span>
+                                        <span style="margin-left: 16px;">
+                                            <i class="fas fa-video"></i> ${meeting.platform}
+                                        </span>
+                                    </div>
+                                    ${meeting.summary ? `
+                                        <div style="font-size: 13px; color: #4b5563; margin-top: 8px;">
+                                            ${meeting.summary.substring(0, 150)}...
+                                        </div>
+                                    ` : ''}
+                                </div>
+                                ${meeting.sentiment_score ? `
+                                    <span class="badge badge-${getSentimentClass(meeting.sentiment_score)}">
+                                        ${getSentimentLabel(meeting.sentiment_score)}
+                                    </span>
+                                ` : ''}
+                            </div>
+                        </div>
+                    `).join('');
+                } else {
+                    container.innerHTML = '<p style="color: #6b7280; text-align: center; padding: 20px;">No meetings found.</p>';
+                }
+            } catch (error) {
+                console.error('Error loading meetings:', error);
+                container.innerHTML = '<p style="color: #ef4444; text-align: center; padding: 20px;">Error loading meetings.</p>';
+            }
+        }
+
+        function loadDemoMeetings() {
+            const container = document.getElementById('meetings-list');
+            container.innerHTML = `
+                <div class="meeting-card" onclick="showDemoMeetingDetails('Product Planning Q1')">
+                    <div style="display: flex; justify-content: space-between; align-items: start;">
+                        <div style="flex: 1;">
+                            <h4 style="font-weight: 600; margin-bottom: 4px;">Product Planning Q1</h4>
+                            <div style="font-size: 14px; color: #6b7280; margin-bottom: 8px;">
+                                <i class="fas fa-clock"></i> Dec 15, 2025, 2:00 PM | <i class="fas fa-users"></i> 6 participants | <i class="fas fa-video"></i> zoom
+                            </div>
+                            <div style="font-size: 13px; color: #4b5563;">
+                                The team discussed Q1 priorities and feature roadmap...
+                            </div>
+                        </div>
+                        <span class="badge badge-positive">Positive</span>
+                    </div>
+                </div>
+                <div class="meeting-card" onclick="showDemoMeetingDetails('Engineering Standup')">
+                    <div style="display: flex; justify-content: space-between; align-items: start;">
+                        <div style="flex: 1;">
+                            <h4 style="font-weight: 600; margin-bottom: 4px;">Engineering Standup</h4>
+                            <div style="font-size: 14px; color: #6b7280; margin-bottom: 8px;">
+                                <i class="fas fa-clock"></i> Dec 14, 2025, 10:00 AM | <i class="fas fa-users"></i> 8 participants | <i class="fas fa-video"></i> google_meet
+                            </div>
+                            <div style="font-size: 13px; color: #4b5563;">
+                                Daily standup covering sprint progress, blockers, and upcoming tasks...
+                            </div>
+                        </div>
+                        <span class="badge badge-neutral">Neutral</span>
+                    </div>
+                </div>
+                <div class="meeting-card" onclick="showDemoMeetingDetails('Design Review')">
+                    <div style="display: flex; justify-content: space-between; align-items: start;">
+                        <div style="flex: 1;">
+                            <h4 style="font-weight: 600; margin-bottom: 4px;">Design Review</h4>
+                            <div style="font-size: 14px; color: #6b7280; margin-bottom: 8px;">
+                                <i class="fas fa-clock"></i> Dec 13, 2025, 3:30 PM | <i class="fas fa-users"></i> 4 participants | <i class="fas fa-video"></i> microsoft_teams
+                            </div>
+                            <div style="font-size: 13px; color: #4b5563;">
+                                Reviewed new UI designs for the dashboard redesign project...
+                            </div>
+                        </div>
+                        <span class="badge badge-positive">Positive</span>
+                    </div>
+                </div>
+            `;
+        }
+
+        async function searchMeetings() {
+            const searchTerm = document.getElementById('meeting-search').value.trim();
+            if (!searchTerm) {
+                loadAllMeetings();
+                return;
+            }
+            
+            if (appMode === 'demo') {
+                showNotification('Demo mode: Search functionality preview', 'info');
+                return;
+            }
+            
+            const container = document.getElementById('meetings-list');
+            container.innerHTML = '<div class="loader"></div>';
+            
+            try {
+                const response = await axios.post(`${API_BASE}/search`, {
+                    query: searchTerm,
+                    size: 30
+                });
+                
+                if (response.data.success && response.data.results.length > 0) {
+                    container.innerHTML = response.data.results.map(meeting => `
+                        <div class="meeting-card" onclick="showMeetingDetails('${meeting.meeting_id}')">
+                            <h4 style="font-weight: 600;">${meeting.title || 'Untitled'}</h4>
+                            <div style="font-size: 14px; color: #6b7280; margin-top: 4px;">
+                                ${formatDateTime(meeting.start_time)} | ${meeting.platform}
+                            </div>
+                            ${meeting.highlights?.transcript ? `
+                                <div style="margin-top: 8px; font-size: 13px; background: #fef3c7; padding: 8px; border-radius: 4px;">
+                                    ...${meeting.highlights.transcript[0]}...
+                                </div>
+                            ` : ''}
+                        </div>
+                    `).join('');
+                } else {
+                    container.innerHTML = '<p style="color:#6b7280; text-align: center; padding: 20px;">No meetings found.</p>';
+                }
+            } catch (error) {
+                console.error('Error searching meetings:', error);
+            }
+        }
+
+        function filterMeetings() {
+            if (appMode === 'demo') {
+                showNotification('Demo mode: Filter functionality preview', 'info');
+                return;
+            }
+            loadAllMeetings();
+        }
+
+        async function showMeetingDetails(meetingId) {
+            if (appMode === 'demo') {
+                return;
+            }
+            
+            try {
+                const response = await axios.get(`${API_BASE}/meetings/${meetingId}/summary`);
+                
+                if (response.data.success) {
+                    const meeting = response.data.meeting;
+                    
+                    const modal = document.createElement('div');
+                    modal.style.cssText = 'position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 9999; display: flex; align-items: center; justify-content: center;';
+                    modal.innerHTML = `
+                        <div style="background: white; border-radius: 12px; padding: 32px; max-width: 800px; max-height: 80vh; overflow-y: auto;">
+                            <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 24px;">
+                                <h2 style="font-size: 24px; font-weight: bold;">${meeting.title}</h2>
+                                <button onclick="this.closest('div[style*=fixed]').remove()" style="background: none; border: none; font-size: 24px; cursor: pointer;">&times;</button>
+                            </div>
+                            
+                            <div style="margin-bottom: 16px;">
+                                <strong>Date:</strong> ${formatDateTime(meeting.start_time)}<br>
+                                <strong>Duration:</strong> ${meeting.duration_minutes || 'N/A'} minutes<br>
+                                <strong>Platform:</strong> ${meeting.platform}<br>
+                                <strong>Organizer:</strong> ${meeting.organizer || 'N/A'}
+                            </div>
+                            
+                            ${meeting.participants ? `
+                                <div style="margin-bottom: 16px;">
+                                    <strong>Participants (${meeting.participants.length}):</strong>
+                                    <div style="margin-top: 8px;">
+                                        ${meeting.participants.slice(0, 10).map(p => `<span class="badge" style="background: #e5e7eb; color: #374151; margin: 4px;">${p}</span>`).join('')}
+                                    </div>
+                                </div>
+                            ` : ''}
+                            
+                            ${meeting.summary ? `
+                                <div style="margin-bottom: 16px;">
+                                    <strong>Summary:</strong>
+                                    <p style="margin-top: 8px; line-height: 1.6;">${meeting.summary}</p>
+                                </div>
+                            ` : ''}
+                            
+                            ${meeting.decisions && meeting.decisions.length > 0 ? `
+                                <div style="margin-bottom: 16px;">
+                                    <strong>Decisions Made:</strong>
+                                    <ul style="margin-top: 8px; padding-left: 20px;">
+                                        ${meeting.decisions.map(d => `<li style="margin-bottom: 4px;">${d}</li>`).join('')}
+                                    </ul>
+                                </div>
+                            ` : ''}
+                            
+                            ${meeting.action_items && meeting.action_items.length > 0 ? `
+                                <div style="margin-bottom: 16px;">
+                                    <strong>Action Items:</strong>
+                                    <ul style="margin-top: 8px; padding-left: 20px;">
+                                        ${meeting.action_items.map(a => `<li style="margin-bottom: 4px;">${typeof a === 'string' ? a : a.description}</li>`).join('')}
+                                    </ul>
+                                </div>
+                            ` : ''}
+                            
+                            ${meeting.sentiment_score ? `
+                                <div style="margin-bottom: 16px;">
+                                    <strong>Sentiment:</strong>
+                                    <span class="badge badge-${getSentimentClass(meeting.sentiment_score)}" style="margin-left: 8px;">
+                                        ${getSentimentLabel(meeting.sentiment_score)}
+                                    </span>
+                                </div>
+                            ` : ''}
+                        </div>
+                    `;
+                    document.body.appendChild(modal);
+                }
+            } catch (error) {
+                console.error('Error loading meeting details:', error);
+                showNotification('Error loading meeting details', 'error');
+            }
+        }
+
+        // ============================================================
+        // CALENDAR
+        // ============================================================
+
+        async function loadCalendarData() {
+            if (appMode === 'demo') {
+                loadDemoCalendarData();
+                return;
+            }
+            
+            loadUpcomingMeetings();
+            loadPastMeetings();
+        }
+
+        function loadDemoCalendarData() {
+            document.getElementById('upcoming-meetings-list').innerHTML = `
+                <div style="padding: 12px; background: #f0f9ff; border-left: 3px solid #3b82f6; border-radius: 6px; margin-bottom: 12px;">
+                    <h4 style="font-weight: 600; margin-bottom: 4px;">Weekly Team Sync</h4>
+                    <div style="font-size: 13px; color: #6b7280;">
+                        <i class="fas fa-clock"></i> Tomorrow, 10:00 AM
+                    </div>
+                    <div style="font-size: 13px; color: #6b7280; margin-top: 4px;">
+                        <i class="fas fa-users"></i> 8 attendees
+                    </div>
+                    <button onclick="showNotification('Demo mode: Join meeting preview', 'info')" style="display: inline-block; margin-top: 8px; padding: 6px 12px; background: #3b82f6; color: white; border: none; border-radius: 4px; font-size: 13px; cursor: pointer;">
+                        <i class="fas fa-video"></i> Join Meeting
+                    </button>
+                </div>
+                <div style="padding: 12px; background: #f0f9ff; border-left: 3px solid #3b82f6; border-radius: 6px; margin-bottom: 12px;">
+                    <h4 style="font-weight: 600; margin-bottom: 4px;">Product Review</h4>
+                    <div style="font-size: 13px; color: #6b7280;">
+                        <i class="fas fa-clock"></i> Dec 18, 2025, 2:00 PM
+                    </div>
+                    <div style="font-size: 13px; color: #6b7280; margin-top: 4px;">
+                        <i class="fas fa-users"></i> 5 attendees
+                    </div>
+                </div>
+                <div style="padding: 12px; background: #f0f9ff; border-left: 3px solid #3b82f6; border-radius: 6px; margin-bottom: 12px;">
+                    <h4 style="font-weight: 600; margin-bottom: 4px;">Client Presentation</h4>
+                    <div style="font-size: 13px; color: #6b7280;">
+                        <i class="fas fa-clock"></i> Dec 20, 2025, 3:30 PM
+                    </div>
+                    <div style="font-size: 13px; color: #6b7280; margin-top: 4px;">
+                        <i class="fas fa-users"></i> 4 attendees
+                    </div>
+                </div>
+            `;
+            
+            document.getElementById('past-meetings-list').innerHTML = `
+                <div class="meeting-card">
+                    <h4 style="font-weight: 600;">Sprint Retrospective</h4>
+                    <div style="font-size: 14px; color: #6b7280; margin-top: 4px;">
+                        Dec 10, 2025, 4:00 PM | 7 attendees
+                    </div>
+                </div>
+                <div class="meeting-card">
+                    <h4 style="font-weight: 600;">Architecture Review</h4>
+                    <div style="font-size: 14px; color: #6b7280; margin-top: 4px;">
+                        Dec 8, 2025, 11:00 AM | 6 attendees
+                    </div>
+                </div>
+            `;
+        }
+
+        async function loadUpcomingMeetings() {
+            const container = document.getElementById('upcoming-meetings-list');
+            container.innerHTML = '<div class="loader"></div>';
+            
+            try {
+                const response = await axios.get(`${API_BASE}/calendar/upcoming?days=14`);
+                
+                if (response.data.success && response.data.meetings.length > 0) {
+                    container.innerHTML = response.data.meetings.map(meeting => `
+                        <div style="padding: 12px; background: #f0f9ff; border-left: 3px solid #3b82f6; border-radius: 6px; margin-bottom: 12px;">
+                            <h4 style="font-weight: 600; margin-bottom: 4px;">${meeting.title}</h4>
+                            <div style="font-size: 13px; color: #6b7280;">
+                                <i class="fas fa-clock"></i> ${formatDateTime(meeting.start_time)}
+                            </div>
+                            <div style="font-size: 13px; color: #6b7280; margin-top: 4px;">
+                                <i class="fas fa-users"></i> ${meeting.attendees?.length || 0} attendees
+                            </div>
+                            ${meeting.meeting_link ? `
+                                <a href="${meeting.meeting_link}" target="_blank" style="display: inline-block; margin-top: 8px; padding: 6px 12px; background: #3b82f6; color: white; text-decoration: none; border-radius: 4px; font-size: 13px;">
+                                    <i class="fas fa-video"></i> Join Meeting
+                                </a>
+                            ` : ''}
+                        </div>
+                    `).join('');
+                } else {
+                    container.innerHTML = '<p style="color: #6b7280; text-align: center; padding: 20px;">No upcoming meetings.</p>';
+                }
+            } catch (error) {
+                console.error('Error loading upcoming meetings:', error);
+                container.innerHTML = '<p style="color: #ef4444; text-align: center; padding: 20px;">Error loading meetings.</p>';
+            }
+        }
+
+        async function loadPastMeetings() {
+            const container = document.getElementById('past-meetings-list');
+            container.innerHTML = '<div class="loader"></div>';
+            
+            try {
+                const response = await axios.get(`${API_BASE}/calendar/past?days=30`);
+                
+                if (response.data.success && response.data.meetings.length > 0) {
+                    container.innerHTML = response.data.meetings.map(meeting => `
+                        <div class="meeting-card" onclick="showMeetingDetails('${meeting.event_id}')">
+                            <h4 style="font-weight: 600;">${meeting.title}</h4>
+                            <div style="font-size: 14px; color: #6b7280; margin-top: 4px;">
+                                ${formatDateTime(meeting.start_time)} | ${meeting.attendees?.length || 0} attendees
+                            </div>
+                        </div>
+                    `).join('');
+                } else {
+                    container.innerHTML = '<p style="color: #6b7280; text-align: center; padding: 20px;">No past meetings found.</p>';
+                }
+            } catch (error) {
+                console.error('Error loading past meetings:', error);
+            }
+        }
+
+        async function createMeeting(event) {
+            event.preventDefault();
+            
+            if (appMode === 'demo') {
+                showNotification('Demo mode: Meeting creation preview. In production, this would create a real calendar event.', 'info');
+                event.target.reset();
+                return;
+            }
+            
+            const attendees = document.getElementById('meeting-attendees').value
+                .split(',')
+                .map(email => email.trim())
+                .filter(email => email);
+            
+            const meetingData = {
+                title: document.getElementById('meeting-title').value,
+                description: document.getElementById('meeting-description').value,
+                start_time: document.getElementById('meeting-start').value,
+                end_time: document.getElementById('meeting-end').value,
+                attendees: attendees,
+                timezone: document.getElementById('meeting-timezone').value,
+                reminders: [30, 10]
+            };
+            
+            try {
+                const response = await axios.post(`${API_BASE}/calendar/create`, meetingData);
+                
+                if (response.data.success) {
+                    showNotification('Meeting created successfully!', 'success');
+                    event.target.reset();
+                    loadUpcomingMeetings();
+                    loadOverviewStats();
+                } else {
+                    showNotification('Error creating meeting', 'error');
+                }
+            } catch (error) {
+                console.error('Error creating meeting:', error);
+                showNotification('Error creating meeting', 'error');
+            }
+        }
+
+        // ============================================================
+        // NETWORK
+        // ============================================================
+
+        async function loadNetworkData() {
+            if (appMode === 'demo') {
+                loadDemoNetworkData();
+                return;
+            }
+            
+            const metricsContainer = document.getElementById('network-metrics');
+            const graphContainer = document.getElementById('network-graph');
+            const collaboratorsContainer = document.getElementById('top-collaborators-list');
+            
+            metricsContainer.innerHTML = '<div class="loader"></div>';
+            graphContainer.innerHTML = '<div class="loader"></div>';
+            collaboratorsContainer.innerHTML = '<div class="loader"></div>';
+            
+            try {
+                const response = await axios.get(`${API_BASE}/network`);
+                
+                if (response.data.success) {
+                    const metrics = response.data.metrics;
+                    
+                    metricsContainer.innerHTML = `
+                        <div style="text-align: center; padding: 16px; background: #f9fafb; border-radius: 8px;">
+                            <div style="font-size: 24px; font-weight: bold; color: #667eea;">${metrics.total_nodes || 0}</div>
+                            <div style="font-size: 13px; color: #6b7280;">Total Members</div>
+                        </div>
+                        <div style="text-align: center; padding: 16px; background: #f9fafb; border-radius: 8px;">
+                            <div style="font-size: 24px; font-weight: bold; color: #667eea;">${metrics.total_edges || 0}</div>
+                            <div style="font-size: 13px; color: #6b7280;">Connections</div>
+                        </div>
+                        <div style="text-align: center; padding: 16px; background: #f9fafb; border-radius: 8px;">
+                            <div style="font-size: 24px; font-weight: bold; color: #667eea;">${(metrics.density * 100).toFixed(1)}%</div>
+                            <div style="font-size: 13px; color: #6b7280;">Network Density</div>
+                        </div>
+                        <div style="text-align: center; padding: 16px; background: #f9fafb; border-radius: 8px;">
+                            <div style="font-size: 24px; font-weight: bold; color: #667eea;">${(metrics.avg_clustering * 100).toFixed(1)}%</div>
+                            <div style="font-size: 13px; color: #6b7280;">Avg Clustering</div>
+                        </div>
+                    `;
+                    
+                    if (response.data.visualization) {
+                        const graphData = JSON.parse(response.data.visualization);
+                        Plotly.newPlot('network-graph', graphData.data, graphData.layout, {responsive: true});
+                    }
+                    
+                    if (metrics.top_collaborators && metrics.top_collaborators.length > 0) {
+                        collaboratorsContainer.innerHTML = metrics.top_collaborators.map((collab, index) => `
+                            <div style="display: flex; justify-content: space-between; align-items: center; padding: 12px; background: #f9fafb; border-radius: 6px; margin-bottom: 8px;">
+                                <div>
+                                    <div style="font-weight: 600;">${index + 1}. ${collab.email}</div>
+                                    <div style="font-size: 13px; color: #6b7280;">${collab.connections} connections | ${collab.centrality.toFixed(3)} centrality</div>
+                                </div>
+                                <button onclick="viewUserNetwork('${collab.email}')" style="padding: 6px 12px; background: #667eea; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 13px;">
+                                    View Details
+                                </button>
+                            </div>
+                        `).join('');
+                    }
+                }
+            } catch (error) {
+                console.error('Error loading network data:', error);
+                metricsContainer.innerHTML = '<p style="color: #ef4444;">Error loading network data</p>';
+            }
+        }
+
+        // Path: frontend/templates/index.html
+// Find the loadDemoNetworkData() function (around line 1300) and replace it with this:
+
+function loadDemoNetworkData() {
+    document.getElementById('network-metrics').innerHTML = `
+        <div style="text-align: center; padding: 16px; background: #f9fafb; border-radius: 8px;">
+            <div style="font-size: 24px; font-weight: bold; color: #667eea;">42</div>
+            <div style="font-size: 13px; color: #6b7280;">Total Members</div>
+        </div>
+        <div style="text-align: center; padding: 16px; background: #f9fafb; border-radius: 8px;">
+            <div style="font-size: 24px; font-weight: bold; color: #667eea;">287</div>
+            <div style="font-size: 13px; color: #6b7280;">Connections</div>
+        </div>
+        <div style="text-align: center; padding: 16px; background: #f9fafb; border-radius: 8px;">
+            <div style="font-size: 24px; font-weight: bold; color: #667eea;">32.5%</div>
+            <div style="font-size: 13px; color: #6b7280;">Network Density</div>
+        </div>
+        <div style="text-align: center; padding: 16px; background: #f9fafb; border-radius: 8px;">
+            <div style="font-size: 24px; font-weight: bold; color: #667eea;">68.2%</div>
+            <div style="font-size: 13px; color: #6b7280;">Avg Clustering</div>
+        </div>
+    `;
+    
+    // Create interactive demo network graph
+    createDemoNetworkGraph();
+    
+    document.getElementById('top-collaborators-list').innerHTML = `
+        <div style="padding: 12px; background: #f9fafb; border-radius: 6px; margin-bottom: 8px; cursor: pointer;" onclick="showDemoUserNetwork('alice@company.com')">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+                <div>
+                    <div style="font-weight: 600;">1. alice@company.com</div>
+                    <div style="font-size: 13px; color: #6b7280;">18 connections | 0.850 centrality</div>
+                </div>
+                <button onclick="event.stopPropagation(); showDemoUserNetwork('alice@company.com')" style="padding: 6px 12px; background: #667eea; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 13px;">
+                    View Details
+                </button>
+            </div>
+        </div>
+        <div style="padding: 12px; background: #f9fafb; border-radius: 6px; margin-bottom: 8px; cursor: pointer;" onclick="showDemoUserNetwork('bob@company.com')">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+                <div>
+                    <div style="font-weight: 600;">2. bob@company.com</div>
+                    <div style="font-size: 13px; color: #6b7280;">15 connections | 0.720 centrality</div>
+                </div>
+                <button onclick="event.stopPropagation(); showDemoUserNetwork('bob@company.com')" style="padding: 6px 12px; background: #667eea; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 13px;">
+                    View Details
+                </button>
+            </div>
+        </div>
+        <div style="padding: 12px; background: #f9fafb; border-radius: 6px; margin-bottom: 8px; cursor: pointer;" onclick="showDemoUserNetwork('charlie@company.com')">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+                <div>
+                    <div style="font-weight: 600;">3. charlie@company.com</div>
+                    <div style="font-size: 13px; color: #6b7280;">14 connections | 0.680 centrality</div>
+                </div>
+                <button onclick="event.stopPropagation(); showDemoUserNetwork('charlie@company.com')" style="padding: 6px 12px; background: #667eea; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 13px;">
+                    View Details
+                </button>
+            </div>
+        </div>
+        <div style="padding: 12px; background: #f9fafb; border-radius: 6px; margin-bottom: 8px; cursor: pointer;" onclick="showDemoUserNetwork('diana@company.com')">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+                <div>
+                    <div style="font-weight: 600;">4. diana@company.com</div>
+                    <div style="font-size: 13px; color: #6b7280;">13 connections | 0.650 centrality</div>
+                </div>
+                <button onclick="event.stopPropagation(); showDemoUserNetwork('diana@company.com')" style="padding: 6px 12px; background: #667eea; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 13px;">
+                    View Details
+                </button>
+            </div>
+        </div>
+        <div style="padding: 12px; background: #f9fafb; border-radius: 6px; margin-bottom: 8px; cursor: pointer;" onclick="showDemoUserNetwork('eve@company.com')">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+                <div>
+                    <div style="font-weight: 600;">5. eve@company.com</div>
+                    <div style="font-size: 13px; color: #6b7280;">12 connections | 0.620 centrality</div>
+                </div>
+                <button onclick="event.stopPropagation(); showDemoUserNetwork('eve@company.com')" style="padding: 6px 12px; background: #667eea; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 13px;">
+                    View Details
+                </button>
+            </div>
+        </div>
+    `;
+}
+
+function createDemoNetworkGraph() {
+    // Demo network data with realistic structure
+    const nodes = [
+        { name: 'alice@company.com', meetings: 45, department: 'Engineering', x: 0, y: 0 },
+        { name: 'bob@company.com', meetings: 38, department: 'Product', x: 2, y: 1 },
+        { name: 'charlie@company.com', meetings: 32, department: 'Design', x: 1, y: 3 },
+        { name: 'diana@company.com', meetings: 35, department: 'Marketing', x: -2, y: 2 },
+        { name: 'eve@company.com', meetings: 30, department: 'Engineering', x: 2, y: -2 },
+        { name: 'frank@company.com', meetings: 28, department: 'Product', x: -1, y: -2 },
+        { name: 'grace@company.com', meetings: 25, department: 'Design', x: 3, y: 3 },
+        { name: 'henry@company.com', meetings: 22, department: 'Engineering', x: -3, y: 0 },
+        { name: 'iris@company.com', meetings: 20, department: 'Marketing', x: 0, y: -3 },
+        { name: 'jack@company.com', meetings: 18, department: 'Product', x: -2, y: -1 },
+        { name: 'kate@company.com', meetings: 16, department: 'Design', x: 1, y: -1 },
+        { name: 'liam@company.com', meetings: 15, department: 'Engineering', x: 3, y: 0 }
+    ];
+    
+    // Define connections (edges) between team members
+    const edges = [
+        // Alice's connections (hub)
+        { from: 0, to: 1, weight: 25 }, { from: 0, to: 2, weight: 20 }, { from: 0, to: 3, weight: 15 },
+        { from: 0, to: 4, weight: 30 }, { from: 0, to: 5, weight: 12 }, { from: 0, to: 7, weight: 18 },
+        
+        // Bob's connections
+        { from: 1, to: 2, weight: 18 }, { from: 1, to: 3, weight: 22 }, { from: 1, to: 5, weight: 20 },
+        { from: 1, to: 9, weight: 15 },
+        
+        // Charlie's connections
+        { from: 2, to: 3, weight: 12 }, { from: 2, to: 6, weight: 16 }, { from: 2, to: 10, weight: 14 },
+        
+        // Diana's connections
+        { from: 3, to: 8, weight: 18 }, { from: 3, to: 9, weight: 10 },
+        
+        // Eve's connections
+        { from: 4, to: 7, weight: 22 }, { from: 4, to: 11, weight: 16 },
+        
+        // Frank's connections
+        { from: 5, to: 9, weight: 14 }, { from: 5, to: 10, weight: 8 },
+        
+        // Grace's connections
+        { from: 6, to: 10, weight: 12 }, { from: 6, to: 11, weight: 8 },
+        
+        // Henry's connections
+        { from: 7, to: 11, weight: 15 },
+        
+        // Additional cross-connections
+        { from: 8, to: 9, weight: 10 }, { from: 10, to: 11, weight: 6 }
+    ];
+    
+    // Create edge traces (lines between nodes)
+    const edgeTraces = edges.map(edge => {
+        const source = nodes[edge.from];
+        const target = nodes[edge.to];
+        
+        return {
+            x: [source.x, target.x, null],
+            y: [source.y, target.y, null],
+            mode: 'lines',
+            line: {
+                width: Math.max(1, edge.weight / 5),
+                color: 'rgba(102, 126, 234, 0.3)'
+            },
+            hoverinfo: 'none',
+            showlegend: false
+        };
+    });
+    
+    // Prepare node data
+    const nodeX = nodes.map(n => n.x);
+    const nodeY = nodes.map(n => n.y);
+    const nodeSize = nodes.map(n => 10 + n.meetings * 0.5);
+    const nodeText = nodes.map(n => 
+        `${n.name}<br>Meetings: ${n.meetings}<br>Department: ${n.department}<br>Click for details`
+    );
+    const nodeColor = nodes.map(n => {
+        // Color by department
+        const colors = {
+            'Engineering': '#667eea',
+            'Product': '#10b981',
+            'Design': '#f59e0b',
+            'Marketing': '#8b5cf6'
+        };
+        return colors[n.department] || '#6b7280';
+    });
+    
+    // Create node trace
+    const nodeTrace = {
+        x: nodeX,
+        y: nodeY,
+        mode: 'markers+text',
+        marker: {
+            size: nodeSize,
+            color: nodeColor,
+            line: {
+                width: 2,
+                color: 'white'
+            }
+        },
+        text: nodes.map((n, i) => n.name.split('@')[0]),
+        textposition: 'top center',
+        textfont: {
+            size: 9,
+            color: '#374151'
+        },
+        hovertext: nodeText,
+        hoverinfo: 'text',
+        showlegend: false,
+        customdata: nodes.map(n => n.name)
+    };
+    
+    // Combine all traces
+    const data = [...edgeTraces, nodeTrace];
+    
+    // Layout configuration
+    const layout = {
+        title: {
+            text: 'Team Collaboration Network<br><sub>Click on nodes to see collaboration details</sub>',
+            font: { size: 18, color: '#374151' }
+        },
+        showlegend: false,
+        hovermode: 'closest',
+        margin: { t: 80, b: 40, l: 40, r: 40 },
+        xaxis: {
+            showgrid: false,
+            zeroline: false,
+            showticklabels: false,
+            title: ''
+        },
+        yaxis: {
+            showgrid: false,
+            zeroline: false,
+            showticklabels: false,
+            title: ''
+        },
+        plot_bgcolor: '#f9fafb',
+        paper_bgcolor: 'white',
+        height: 600,
+        annotations: [
+            {
+                x: 0.5,
+                y: -0.05,
+                xref: 'paper',
+                yref: 'paper',
+                text: '<b>Legend:</b> <span style="color:#667eea">●</span> Engineering  <span style="color:#10b981">●</span> Product  <span style="color:#f59e0b">●</span> Design  <span style="color:#8b5cf6">●</span> Marketing',
+                showarrow: false,
+                font: { size: 12 },
+                xanchor: 'center'
+            }
+        ]
+    };
+    
+    // Plot configuration
+    const config = {
+        responsive: true,
+        displayModeBar: true,
+        displaylogo: false,
+        modeBarButtonsToRemove: ['pan2d', 'lasso2d', 'select2d', 'autoScale2d'],
+        toImageButtonOptions: {
+            format: 'png',
+            filename: 'collaboration_network',
+            height: 800,
+            width: 1200,
+            scale: 2
+        }
+    };
+    
+    // Render the graph
+    Plotly.newPlot('network-graph', data, layout, config);
+    
+    // Add click event handler
+    const graphDiv = document.getElementById('network-graph');
+    graphDiv.on('plotly_click', function(data) {
+        if (data.points && data.points[0]) {
+            const point = data.points[0];
+            if (point.customdata) {
+                showDemoUserNetwork(point.customdata);
+            }
+        }
+    });
+    
+    // Add info banner
+    setTimeout(() => {
+        const banner = document.createElement('div');
+        banner.style.cssText = 'background: #dbeafe; border-left: 4px solid #3b82f6; padding: 12px; border-radius: 6px; margin-top: 16px; font-size: 13px; color: #1e40af;';
+        banner.innerHTML = '<i class="fas fa-info-circle"></i> <strong>Interactive Network:</strong> This graph shows collaboration patterns between team members. Node size represents meeting participation, line thickness shows collaboration strength, and colors indicate departments. Click any node to see detailed collaboration statistics.';
+        
+        const graphContainer = document.getElementById('network-graph').parentElement;
+        graphContainer.appendChild(banner);
+    }, 500);
+}
+
+function showDemoUserNetwork(userEmail) {
+    // Demo user network details
+    const userNetworks = {
+        'alice@company.com': {
+            email: 'alice@company.com',
+            name: 'Alice Johnson',
+            total_meetings: 45,
+            total_collaborators: 18,
+            platforms: ['Zoom', 'Google Meet', 'Microsoft Teams'],
+            department: 'Engineering',
+            centrality: 0.850,
+            top_collaborators: [
+                { email: 'eve@company.com', meeting_count: 30, strength: 0.67 },
+                { email: 'bob@company.com', meeting_count: 25, strength: 0.56 },
+                { email: 'charlie@company.com', meeting_count: 20, strength: 0.44 },
+                { email: 'henry@company.com', meeting_count: 18, strength: 0.40 },
+                { email: 'diana@company.com', meeting_count: 15, strength: 0.33 }
+            ]
+        },
+        'bob@company.com': {
+            email: 'bob@company.com',
+            name: 'Bob Smith',
+            total_meetings: 38,
+            total_collaborators: 15,
+            platforms: ['Zoom', 'Google Meet', 'Slack'],
+            department: 'Product',
+            centrality: 0.720,
+            top_collaborators: [
+                { email: 'alice@company.com', meeting_count: 25, strength: 0.66 },
+                { email: 'diana@company.com', meeting_count: 22, strength: 0.58 },
+                { email: 'frank@company.com', meeting_count: 20, strength: 0.53 },
+                { email: 'charlie@company.com', meeting_count: 18, strength: 0.47 },
+                { email: 'jack@company.com', meeting_count: 15, strength: 0.39 }
+            ]
+        },
+        'charlie@company.com': {
+            email: 'charlie@company.com',
+            name: 'Charlie Brown',
+            total_meetings: 32,
+            total_collaborators: 14,
+            platforms: ['Microsoft Teams', 'Figma', 'Miro'],
+            department: 'Design',
+            centrality: 0.680,
+            top_collaborators: [
+                { email: 'alice@company.com', meeting_count: 20, strength: 0.63 },
+                { email: 'bob@company.com', meeting_count: 18, strength: 0.56 },
+                { email: 'grace@company.com', meeting_count: 16, strength: 0.50 },
+                { email: 'kate@company.com', meeting_count: 14, strength: 0.44 },
+                { email: 'diana@company.com', meeting_count: 12, strength: 0.38 }
+            ]
+        },
+        'diana@company.com': {
+            email: 'diana@company.com',
+            name: 'Diana Prince',
+            total_meetings: 35,
+            total_collaborators: 13,
+            platforms: ['Zoom', 'Slack', 'Google Meet'],
+            department: 'Marketing',
+            centrality: 0.650,
+            top_collaborators: [
+                { email: 'bob@company.com', meeting_count: 22, strength: 0.63 },
+                { email: 'iris@company.com', meeting_count: 18, strength: 0.51 },
+                { email: 'alice@company.com', meeting_count: 15, strength: 0.43 },
+                { email: 'charlie@company.com', meeting_count: 12, strength: 0.34 },
+                { email: 'jack@company.com', meeting_count: 10, strength: 0.29 }
+            ]
+        },
+        'eve@company.com': {
+            email: 'eve@company.com',
+            name: 'Eve Wilson',
+            total_meetings: 30,
+            total_collaborators: 12,
+            platforms: ['Google Meet', 'Zoom'],
+            department: 'Engineering',
+            centrality: 0.620,
+            top_collaborators: [
+                { email: 'alice@company.com', meeting_count: 30, strength: 1.00 },
+                { email: 'henry@company.com', meeting_count: 22, strength: 0.73 },
+                { email: 'liam@company.com', meeting_count: 16, strength: 0.53 },
+                { email: 'bob@company.com', meeting_count: 10, strength: 0.33 },
+                { email: 'frank@company.com', meeting_count: 8, strength: 0.27 }
+            ]
+        }
+    };
+    
+    const details = userNetworks[userEmail] || userNetworks['alice@company.com'];
+    
+    const modal = document.createElement('div');
+    modal.style.cssText = 'position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 9999; display: flex; align-items: center; justify-content: center;';
+    modal.innerHTML = `
+        <div style="background: white; border-radius: 12px; padding: 32px; max-width: 700px; max-height: 80vh; overflow-y: auto;">
+            <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 24px;">
+                <div>
+                    <h2 style="font-size: 24px; font-weight: bold; margin-bottom: 4px;">Collaboration Details</h2>
+                    <p style="color: #6b7280; font-size: 14px;">Network analysis for ${details.name}</p>
+                </div>
+                <button onclick="this.closest('div[style*=fixed]').remove()" style="background: none; border: none; font-size: 24px; cursor: pointer; color: #6b7280;">&times;</button>
+            </div>
+            
+            <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; margin-bottom: 24px;">
+                <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 16px; border-radius: 8px; color: white;">
+                    <div style="font-size: 28px; font-weight: bold;">${details.total_meetings}</div>
+                    <div style="font-size: 13px; opacity: 0.9;">Total Meetings</div>
+                </div>
+                <div style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); padding: 16px; border-radius: 8px; color: white;">
+                    <div style="font-size: 28px; font-weight: bold;">${details.total_collaborators}</div>
+                    <div style="font-size: 13px; opacity: 0.9;">Collaborators</div>
+                </div>
+                <div style="background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); padding: 16px; border-radius: 8px; color: white;">
+                    <div style="font-size: 28px; font-weight: bold;">${(details.centrality * 100).toFixed(0)}%</div>
+                    <div style="font-size: 13px; opacity: 0.9;">Centrality Score</div>
+                </div>
+                <div style="background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%); padding: 16px; border-radius: 8px; color: white;">
+                    <div style="font-size: 28px; font-weight: bold;">${details.platforms.length}</div>
+                    <div style="font-size: 13px; opacity: 0.9;">Platforms Used</div>
+                </div>
+            </div>
+            
+            <div style="margin-bottom: 20px;">
+                <strong style="color: #374151;">Email:</strong> <span style="color: #6b7280;">${details.email}</span><br>
+                <strong style="color: #374151;">Department:</strong> <span style="color: #6b7280;">${details.department}</span><br>
+                <strong style="color: #374151;">Platforms:</strong> <span style="color: #6b7280;">${details.platforms.join(', ')}</span>
+            </div>
+            
+            <h3 style="font-size: 18px; font-weight: bold; margin-bottom: 12px; color: #374151;">
+                <i class="fas fa-users" style="color: #667eea;"></i> Top Collaborators
+            </h3>
+            <div style="max-height: 300px; overflow-y: auto;">
+                ${details.top_collaborators.map((collab, index) => `
+                    <div style="padding: 12px; background: #f9fafb; border-radius: 6px; margin-bottom: 8px; border-left: 3px solid ${index === 0 ? '#667eea' : '#d1d5db'};">
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <div style="flex: 1;">
+                                <div style="font-weight: 600; color: #374151; margin-bottom: 4px;">
+                                    ${index + 1}. ${collab.email}
+                                </div>
+                                <div style="font-size: 13px; color: #6b7280;">
+                                    <i class="fas fa-video"></i> ${collab.meeting_count} meetings together
+                                </div>
+                            </div>
+                            <div style="text-align: right;">
+                                <div style="font-size: 20px; font-weight: bold; color: #667eea;">
+                                    ${(collab.strength * 100).toFixed(0)}%
+                                </div>
+                                <div style="font-size: 11px; color: #6b7280;">strength</div>
+                            </div>
+                        </div>
+                        <div style="margin-top: 8px; background: #e5e7eb; height: 4px; border-radius: 2px; overflow: hidden;">
+                            <div style="background: linear-gradient(90deg, #667eea, #764ba2); height: 100%; width: ${collab.strength * 100}%; transition: width 0.3s;"></div>
+                        </div>
+                    </div>
+                `).join('')}
+            </div>
+            
+            <div style="background: #f0f9ff; border-left: 4px solid #3b82f6; padding: 12px; border-radius: 6px; margin-top: 20px; font-size: 13px; color: #1e40af;">
+                <strong><i class="fas fa-lightbulb"></i> Insight:</strong> ${details.name} is a ${details.centrality > 0.7 ? 'highly central' : 'well-connected'} member of the ${details.department} team with strong cross-functional collaboration patterns.
+            </div>
+        </div>
+    `;
+    document.body.appendChild(modal);
+}
+
+        async function viewUserNetwork(userEmail) {
+            if (appMode === 'demo') {
+                showNotification('Demo mode: User network details preview', 'info');
+                return;
+            }
+            
+            try {
+                const response = await axios.get(`${API_BASE}/network/user/${encodeURIComponent(userEmail)}`);
+                
+                if (response.data.success) {
+                    const details = response.data.details;
+                    
+                    const modal = document.createElement('div');
+                    modal.style.cssText = 'position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 9999; display: flex; align-items: center; justify-content: center;';
+                    modal.innerHTML = `
+                        <div style="background: white; border-radius: 12px; padding: 32px; max-width: 600px; max-height: 80vh; overflow-y: auto;">
+                            <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 24px;">
+                                <h2 style="font-size: 24px; font-weight: bold;">Collaboration Details</h2>
+                                <button onclick="this.closest('div[style*=fixed]').remove()" style="background: none; border: none; font-size: 24px; cursor: pointer;">&times;</button>
+                            </div>
+                            
+                            <div style="margin-bottom: 16px;">
+                                <strong>Email:</strong> ${details.email}<br>
+                                <strong>Total Meetings:</strong> ${details.total_meetings}<br>
+                                <strong>Total Collaborators:</strong> ${details.total_collaborators}<br>
+                                <strong>Platforms:</strong> ${details.platforms.join(', ')}
+                            </div>
+                            
+                            <h3 style="font-size: 18px; font-weight: bold; margin: 16px 0;">Top Collaborators</h3>
+                            ${details.top_collaborators.map(collab => `
+                                <div style="padding: 8px; background: #f9fafb; border-radius: 6px; margin-bottom: 8px;">
+                                    <div style="font-weight: 600;">${collab.email}</div>
+                                    <div style="font-size: 13px; color: #6b7280;">
+                                        ${collab.meeting_count} meetings | Strength: ${(collab.strength * 100).toFixed(1)}%
+                                    </div>
+                                </div>
+                            `).join('')}
+                        </div>
+                    `;
+                    document.body.appendChild(modal);
+                }
+            } catch (error) {
+                console.error('Error loading user network:', error);
+                showNotification('Error loading user details', 'error');
+            }
+        }
+
+        // ============================================================
+        // TIMELINE VISUALIZER
+        // ============================================================
+
+        // Path: frontend/templates/index.html
+// Find the generateTimeline() function and replace it completely:
+
+async function generateTimeline() {
+    const query = document.getElementById('timeline-query').value.trim();
+    if (!query) {
+        showNotification('Please enter a search query', 'error');
+        return;
+    }
+    
+    const container = document.getElementById('timeline-visualization');
+    //container.innerHTML = '<div class="loader"></div>';
+    
+    if (appMode === 'demo') {
+        generateDemoTimeline(query, container);
+        return;
+    }
+    
+    try {
+        const response = await axios.post(`${API_BASE}/analytics/timeline`, { query });
+        
+        if (response.data.success && response.data.timeline) {
+            const timelineData = JSON.parse(response.data.timeline);
+            Plotly.newPlot('timeline-visualization', timelineData.data, timelineData.layout, {responsive: true});
+        } else {
+            container.innerHTML = '<p style="color: #6b7280; text-align: center; padding: 40px;">No timeline data available for this query.</p>';
+        }
+    } catch (error) {
+        console.error('Error generating timeline:', error);
+        container.innerHTML = '<p style="color: #ef4444; text-align: center; padding: 40px;">Error generating timeline.</p>';
+    }
+}
+
+function generateDemoTimeline(query, container) {
+    setTimeout(() => {
+        // Generate timeline data based on query keywords
+        const timelineData = generateTimelineDataFromQuery(query);
+        
+        if (timelineData.meetings.length === 0) {
+            container.innerHTML = `
+                <div style="text-align: center; padding: 60px; background: #f9fafb; border-radius: 8px;">
+                    <i class="fas fa-search" style="font-size: 48px; color: #d1d5db; margin-bottom: 16px;"></i>
+                    <p style="color: #374151; font-size: 16px; margin-bottom: 8px;">No meetings found for "${query}"</p>
+                    <p style="color: #6b7280; font-size: 14px;">Try searching for: "product", "planning", "design", "engineering", "marketing", "feature", or "review"</p>
+                </div>
+            `;
+            return;
+        }
+        
+        // Create scatter plot for timeline
+        const scatterTrace = {
+            x: timelineData.meetings.map(m => m.date),
+            y: timelineData.meetings.map(m => m.sentiment),
+            mode: 'markers+text',
+            type: 'scatter',
+            name: 'Meetings',
+            marker: {
+                size: timelineData.meetings.map(m => m.participants * 3),
+                color: timelineData.meetings.map(m => m.sentiment),
+                colorscale: [
+                    [0, '#ef4444'],
+                    [0.5, '#f59e0b'],
+                    [1, '#10b981']
+                ],
+                showscale: true,
+                colorbar: {
+                    title: 'Sentiment',
+                    tickvals: [0, 0.5, 1],
+                    ticktext: ['Negative', 'Neutral', 'Positive']
+                },
+                line: {
+                    width: 2,
+                    color: 'white'
+                }
+            },
+            text: timelineData.meetings.map(m => m.title),
+            textposition: 'top center',
+            textfont: {
+                size: 9,
+                color: '#374151'
+            },
+            hovertemplate: '<b>%{text}</b><br>' +
+                          'Date: %{x|%b %d, %Y}<br>' +
+                          'Sentiment: %{y:.2f}<br>' +
+                          'Participants: %{marker.size:.0f}<br>' +
+                          '<extra></extra>',
+            customdata: timelineData.meetings.map(m => ({
+                summary: m.summary,
+                decisions: m.decisions,
+                platform: m.platform
+            }))
+        };
+        
+        // Create line trace showing trend
+        const trendTrace = {
+            x: timelineData.meetings.map(m => m.date),
+            y: timelineData.meetings.map(m => m.sentiment),
+            mode: 'lines',
+            type: 'scatter',
+            name: 'Sentiment Trend',
+            line: {
+                color: '#667eea',
+                width: 2,
+                dash: 'dash'
+            },
+            hoverinfo: 'skip'
+        };
+        
+        const layout = {
+            title: {
+                text: `Timeline: ${query}<br><sub>Showing ${timelineData.meetings.length} relevant meetings</sub>`,
+                font: { size: 18 }
+            },
+            xaxis: {
+                title: 'Date',
+                type: 'date',
+                gridcolor: '#e5e7eb',
+                tickformat: '%b %d'
+            },
+            yaxis: {
+                title: 'Sentiment Score',
+                range: [0, 1],
+                gridcolor: '#e5e7eb',
+                tickvals: [0, 0.25, 0.5, 0.75, 1],
+                ticktext: ['0.0', '0.25', '0.5', '0.75', '1.0']
+            },
+            hovermode: 'closest',
+            plot_bgcolor: '#f9fafb',
+            paper_bgcolor: 'white',
+            height: 500,
+            showlegend: true,
+            legend: {
+                x: 0.02,
+                y: 0.98,
+                bgcolor: 'rgba(255, 255, 255, 0.8)',
+                bordercolor: '#d1d5db',
+                borderwidth: 1
+            }
+        };
+        
+        const config = {
+            responsive: true,
+            displayModeBar: true,
+            displaylogo: false,
+            modeBarButtonsToRemove: ['pan2d', 'lasso2d', 'select2d'],
+            toImageButtonOptions: {
+                format: 'png',
+                filename: 'meeting_timeline',
+                height: 600,
+                width: 1200,
+                scale: 2
+            }
+        };
+        
+        Plotly.newPlot('timeline-visualization', [trendTrace, scatterTrace], layout, config);
+        
+        // Add click event to show meeting details
+        const graphDiv = document.getElementById('timeline-visualization');
+        graphDiv.on('plotly_click', function(data) {
+            if (data.points && data.points[0] && data.points[0].data.name === 'Meetings') {
+                const point = data.points[0];
+                const meeting = timelineData.meetings[point.pointIndex];
+                showTimelineMeetingDetails(meeting);
+            }
+        });
+        
+        // Add summary cards below timeline
+        addTimelineSummary(timelineData, query);
+        
+    }, 800);
+}
+
+function generateTimelineDataFromQuery(query) {
+    const queryLower = query.toLowerCase();
+    
+    // All available demo meetings with dates
+    const allMeetings = [
+        // Product-related meetings
+        { date: '2025-09-15', title: 'Product Planning Q3', sentiment: 0.85, participants: 6, platform: 'zoom', summary: 'Discussed Q3 product roadmap and feature priorities', decisions: ['Approved feature X', 'Allocated resources for mobile'], keywords: ['product', 'planning', 'roadmap', 'feature'] },
+        { date: '2025-09-28', title: 'Product Review Meeting', sentiment: 0.72, participants: 5, platform: 'google_meet', summary: 'Reviewed progress on Q3 goals', decisions: ['Adjusted timeline for feature Y'], keywords: ['product', 'review', 'progress'] },
+        { date: '2025-10-12', title: 'Product Strategy Session', sentiment: 0.78, participants: 7, platform: 'zoom', summary: 'Long-term product vision and strategy discussion', decisions: ['Approved market expansion plan'], keywords: ['product', 'strategy', 'vision', 'planning'] },
+        { date: '2025-11-05', title: 'Product Backlog Refinement', sentiment: 0.65, participants: 8, platform: 'microsoft_teams', summary: 'Prioritized product backlog for Q4', decisions: ['Reprioritized top 10 items'], keywords: ['product', 'backlog', 'planning'] },
+        { date: '2025-11-20', title: 'Product Launch Planning', sentiment: 0.88, participants: 9, platform: 'zoom', summary: 'Planned Q1 product launch strategy', decisions: ['Set launch date for January 15'], keywords: ['product', 'launch', 'planning', 'strategy'] },
+        { date: '2025-12-01', title: 'Product Planning Q1', sentiment: 0.82, participants: 6, platform: 'zoom', summary: 'Q1 planning and priority setting', decisions: ['Approved Q1 roadmap'], keywords: ['product', 'planning', 'roadmap'] },
+        
+        // Design-related meetings
+        { date: '2025-09-10', title: 'Design System Review', sentiment: 0.75, participants: 4, platform: 'figma', summary: 'Reviewed and updated design system components', decisions: ['Standardized button styles'], keywords: ['design', 'review', 'system', 'ui'] },
+        { date: '2025-09-25', title: 'UI/UX Design Workshop', sentiment: 0.80, participants: 6, platform: 'miro', summary: 'Collaborative design workshop for new features', decisions: ['Finalized user flow for feature X'], keywords: ['design', 'ui', 'ux', 'workshop'] },
+        { date: '2025-10-08', title: 'Design Review Session', sentiment: 0.70, participants: 5, platform: 'microsoft_teams', summary: 'Reviewed mockups for dashboard redesign', decisions: ['Approved layout with modifications'], keywords: ['design', 'review', 'mockup', 'ui'] },
+        { date: '2025-10-30', title: 'Design Sprint Planning', sentiment: 0.83, participants: 7, platform: 'miro', summary: 'Planned design sprint for Q4 initiatives', decisions: ['Scheduled 5-day design sprint'], keywords: ['design', 'sprint', 'planning'] },
+        { date: '2025-11-18', title: 'Design Critique Session', sentiment: 0.68, participants: 6, platform: 'figma', summary: 'Team design critique and feedback', decisions: ['Iterate on mobile designs'], keywords: ['design', 'critique', 'feedback', 'review'] },
+        { date: '2025-12-13', title: 'Design Review', sentiment: 0.78, participants: 4, platform: 'microsoft_teams', summary: 'Final design review before development', decisions: ['Approved designs for development'], keywords: ['design', 'review', 'approval'] },
+        
+        // Engineering-related meetings
+        { date: '2025-09-12', title: 'Engineering Architecture Review', sentiment: 0.62, participants: 8, platform: 'google_meet', summary: 'Reviewed system architecture proposals', decisions: ['Adopted microservices approach'], keywords: ['engineering', 'architecture', 'technical', 'review'] },
+        { date: '2025-09-20', title: 'Engineering Sprint Planning', sentiment: 0.70, participants: 10, platform: 'zoom', summary: 'Sprint planning for upcoming iteration', decisions: ['Committed to 45 story points'], keywords: ['engineering', 'sprint', 'planning', 'agile'] },
+        { date: '2025-10-03', title: 'Tech Stack Discussion', sentiment: 0.58, participants: 7, platform: 'slack', summary: 'Discussed technology choices for new project', decisions: ['Selected React and Node.js'], keywords: ['engineering', 'tech', 'technology', 'stack'] },
+        { date: '2025-10-18', title: 'Engineering Standup', sentiment: 0.65, participants: 12, platform: 'google_meet', summary: 'Daily standup and blocker discussion', decisions: ['Reassigned blocked tasks'], keywords: ['engineering', 'standup', 'agile', 'daily'] },
+        { date: '2025-11-08', title: 'Code Review Session', sentiment: 0.72, participants: 6, platform: 'zoom', summary: 'Team code review and best practices', decisions: ['Updated coding standards'], keywords: ['engineering', 'code', 'review', 'technical'] },
+        { date: '2025-11-25', title: 'Engineering Retrospective', sentiment: 0.75, participants: 11, platform: 'miro', summary: 'Sprint retrospective and improvements', decisions: ['Improved deployment process'], keywords: ['engineering', 'retrospective', 'agile', 'improvement'] },
+        { date: '2025-12-14', title: 'Engineering Standup', sentiment: 0.68, participants: 8, platform: 'google_meet', summary: 'Daily progress update', decisions: ['Resolved integration issues'], keywords: ['engineering', 'standup', 'daily'] },
+        
+        // Marketing-related meetings
+        { date: '2025-09-18', title: 'Marketing Campaign Planning', sentiment: 0.80, participants: 5, platform: 'zoom', summary: 'Planned Q4 marketing campaigns', decisions: ['Approved social media strategy'], keywords: ['marketing', 'campaign', 'planning', 'strategy'] },
+        { date: '2025-10-05', title: 'Marketing Strategy Review', sentiment: 0.73, participants: 6, platform: 'slack', summary: 'Reviewed marketing metrics and strategy', decisions: ['Increased content marketing budget'], keywords: ['marketing', 'strategy', 'review', 'metrics'] },
+        { date: '2025-10-22', title: 'Content Marketing Sync', sentiment: 0.77, participants: 4, platform: 'google_meet', summary: 'Content calendar and planning', decisions: ['Finalized Q4 content calendar'], keywords: ['marketing', 'content', 'planning'] },
+        { date: '2025-11-12', title: 'Marketing Analytics Review', sentiment: 0.70, participants: 5, platform: 'zoom', summary: 'Analyzed campaign performance', decisions: ['Optimized ad spend allocation'], keywords: ['marketing', 'analytics', 'review', 'metrics'] },
+        { date: '2025-12-03', title: 'Marketing Strategy Session', sentiment: 0.82, participants: 7, platform: 'zoom', summary: 'Q1 marketing strategy and goals', decisions: ['Set Q1 marketing objectives'], keywords: ['marketing', 'strategy', 'planning', 'goals'] },
+        { date: '2025-12-12', title: 'Marketing Strategy', sentiment: 0.75, participants: 5, platform: 'slack', summary: 'Final Q4 review and Q1 prep', decisions: ['Approved Q1 marketing plan'], keywords: ['marketing', 'strategy', 'planning'] },
+        
+        // Feature-related meetings
+        { date: '2025-09-22', title: 'Feature Discovery Workshop', sentiment: 0.85, participants: 8, platform: 'miro', summary: 'Discovered new feature opportunities', decisions: ['Prioritized top 3 features'], keywords: ['feature', 'discovery', 'workshop', 'innovation'] },
+        { date: '2025-10-15', title: 'Feature Prioritization Meeting', sentiment: 0.68, participants: 9, platform: 'zoom', summary: 'Prioritized feature backlog', decisions: ['Reprioritized based on user feedback'], keywords: ['feature', 'prioritization', 'planning', 'backlog'] },
+        { date: '2025-11-01', title: 'Feature Specification Review', sentiment: 0.72, participants: 7, platform: 'google_meet', summary: 'Reviewed detailed feature specifications', decisions: ['Approved specs for feature Y'], keywords: ['feature', 'specification', 'review', 'requirements'] },
+        { date: '2025-11-28', title: 'Feature Launch Review', sentiment: 0.88, participants: 10, platform: 'zoom', summary: 'Reviewed successful feature launch', decisions: ['Celebrated successful rollout'], keywords: ['feature', 'launch', 'review', 'success'] },
+        { date: '2025-12-10', title: 'Feature Roadmap Planning', sentiment: 0.80, participants: 8, platform: 'miro', summary: 'Planned feature roadmap for Q1', decisions: ['Finalized Q1 feature list'], keywords: ['feature', 'roadmap', 'planning'] },
+        
+        // General meetings
+        { date: '2025-09-05', title: 'Quarterly Business Review', sentiment: 0.75, participants: 15, platform: 'zoom', summary: 'Q3 business review and planning', decisions: ['Set Q4 business objectives'], keywords: ['quarterly', 'review', 'business', 'planning'] },
+        { date: '2025-10-01', title: 'All Hands Meeting', sentiment: 0.82, participants: 50, platform: 'zoom', summary: 'Company-wide updates and Q&A', decisions: ['Announced new hires'], keywords: ['all hands', 'company', 'update'] },
+        { date: '2025-11-15', title: 'Customer Feedback Session', sentiment: 0.78, participants: 7, platform: 'zoom', summary: 'Reviewed customer feedback and insights', decisions: ['Prioritized customer requests'], keywords: ['customer', 'feedback', 'review', 'user'] },
+        { date: '2025-12-05', title: 'Year-End Planning Meeting', sentiment: 0.85, participants: 12, platform: 'microsoft_teams', summary: 'Year-end review and 2025 planning', decisions: ['Set 2025 strategic goals'], keywords: ['planning', 'strategy', 'year', 'goals'] }
+    ];
+    
+    // Filter meetings based on query
+    const filteredMeetings = allMeetings.filter(meeting => {
+        const searchTerms = queryLower.split(' ').filter(term => term.length > 2);
+        return searchTerms.some(term => 
+            meeting.keywords.some(keyword => keyword.includes(term)) ||
+            meeting.title.toLowerCase().includes(term) ||
+            meeting.summary.toLowerCase().includes(term)
+        );
+    });
+    
+    // Sort by date
+    filteredMeetings.sort((a, b) => new Date(a.date) - new Date(b.date));
+    
+    return {
+        meetings: filteredMeetings,
+        query: query
+    };
+}
+
+function showTimelineMeetingDetails(meeting) {
+    const modal = document.createElement('div');
+    modal.style.cssText = 'position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 9999; display: flex; align-items: center; justify-content: center;';
+    modal.innerHTML = `
+        <div style="background: white; border-radius: 12px; padding: 32px; max-width: 600px; max-height: 80vh; overflow-y: auto;">
+            <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 24px;">
+                <h2 style="font-size: 24px; font-weight: bold;">${meeting.title}</h2>
+                <button onclick="this.closest('div[style*=fixed]').remove()" style="background: none; border: none; font-size: 24px; cursor: pointer; color: #6b7280;">&times;</button>
+            </div>
+            
+            <div style="margin-bottom: 16px;">
+                <strong>Date:</strong> ${new Date(meeting.date).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}<br>
+                <strong>Platform:</strong> ${meeting.platform}<br>
+                <strong>Participants:</strong> ${meeting.participants} attendees<br>
+                <strong>Sentiment:</strong> 
+                <span class="badge badge-${meeting.sentiment >= 0.7 ? 'positive' : meeting.sentiment >= 0.5 ? 'neutral' : 'negative'}" style="margin-left: 4px;">
+                    ${meeting.sentiment >= 0.7 ? 'Positive' : meeting.sentiment >= 0.5 ? 'Neutral' : 'Negative'} (${(meeting.sentiment * 100).toFixed(0)}%)
+                </span>
+            </div>
+            
+            <div style="margin-bottom: 16px;">
+                <strong>Summary:</strong>
+                <p style="margin-top: 8px; line-height: 1.6; color: #4b5563;">${meeting.summary}</p>
+            </div>
+            
+            ${meeting.decisions && meeting.decisions.length > 0 ? `
+                <div style="margin-bottom: 16px;">
+                    <strong>Key Decisions:</strong>
+                    <ul style="margin-top: 8px; padding-left: 20px; color: #4b5563;">
+                        ${meeting.decisions.map(d => `<li style="margin-bottom: 4px;">${d}</li>`).join('')}
+                    </ul>
+                </div>
+            ` : ''}
+            
+            <div style="background: #f0f9ff; border-left: 4px solid #3b82f6; padding: 12px; border-radius: 6px; margin-top: 16px; font-size: 13px; color: #1e40af;">
+                <i class="fas fa-info-circle"></i> This is demo data. In production mode, you'll see actual meeting details with full transcripts and action items.
+            </div>
+        </div>
+    `;
+    document.body.appendChild(modal);
+}
+
+function addTimelineSummary(timelineData, query) {
+    const avgSentiment = timelineData.meetings.reduce((sum, m) => sum + m.sentiment, 0) / timelineData.meetings.length;
+    const totalParticipants = timelineData.meetings.reduce((sum, m) => sum + m.participants, 0);
+    
+    const platformCounts = {};
+    timelineData.meetings.forEach(m => {
+        platformCounts[m.platform] = (platformCounts[m.platform] || 0) + 1;
+    });
+    const topPlatform = Object.entries(platformCounts).sort((a, b) => b[1] - a[1])[0];
+    
+    const dateRange = timelineData.meetings.length > 0 ? 
+        `${new Date(timelineData.meetings[0].date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} - ${new Date(timelineData.meetings[timelineData.meetings.length - 1].date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}` :
+        'N/A';
+    
+    const summaryHtml = `
+        <div style="margin-top: 24px; display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px;">
+            <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 16px; border-radius: 8px; color: white;">
+                <div style="font-size: 28px; font-weight: bold;">${timelineData.meetings.length}</div>
+                <div style="font-size: 13px; opacity: 0.9;">Total Meetings</div>
+            </div>
+            <div style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); padding: 16px; border-radius: 8px; color: white;">
+                <div style="font-size: 28px; font-weight: bold;">${(avgSentiment * 100).toFixed(0)}%</div>
+                <div style="font-size: 13px; opacity: 0.9;">Avg Sentiment</div>
+            </div>
+            <div style="background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); padding: 16px; border-radius: 8px; color: white;">
+                <div style="font-size: 28px; font-weight: bold;">${totalParticipants}</div>
+                <div style="font-size: 13px; opacity: 0.9;">Total Participants</div>
+            </div>
+            <div style="background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%); padding: 16px; border-radius: 8px; color: white;">
+                <div style="font-size: 28px; font-weight: bold;">${topPlatform ? topPlatform[0] : 'N/A'}</div>
+                <div style="font-size: 13px; opacity: 0.9;">Top Platform</div>
+            </div>
+        </div>
+        
+        <div style="margin-top: 16px; background: #f9fafb; padding: 16px; border-radius: 8px; border-left: 4px solid #667eea;">
+            <strong style="color: #374151;"><i class="fas fa-calendar-alt"></i> Date Range:</strong> 
+            <span style="color: #6b7280;">${dateRange}</span><br>
+            <strong style="color: #374151; margin-top: 8px; display: inline-block;"><i class="fas fa-search"></i> Query:</strong> 
+            <span style="color: #6b7280;">"${query}"</span>
+        </div>
+        
+        <div style="margin-top: 16px; background: #dbeafe; border-left: 4px solid #3b82f6; padding: 12px; border-radius: 6px; font-size: 13px; color: #1e40af;">
+            <strong><i class="fas fa-lightbulb"></i> Tip:</strong> Click on any point in the timeline to see detailed meeting information. Node size represents participant count, and color indicates sentiment (green = positive, orange = neutral, red = negative).
+        </div>
+    `;
+    
+    const container = document.getElementById('timeline-visualization').parentElement;
+    const existingSummary = container.querySelector('.timeline-summary');
+    if (existingSummary) {
+        existingSummary.remove();
+    }
+    
+    const summaryDiv = document.createElement('div');
+    summaryDiv.className = 'timeline-summary';
+    summaryDiv.innerHTML = summaryHtml;
+    container.appendChild(summaryDiv);
+}
+
+        // ============================================================
+        // SETTINGS
+        // ============================================================
+
+        async function loadSettings() {
+            if (appMode === 'demo') {
+                loadDemoSettings();
+                return;
+            }
+            
+            loadConnectors();
+            loadSystemHealth();
+        }
+
+        function loadDemoSettings() {
+            document.getElementById('connectors-list').innerHTML = `
+                <div style="padding: 12px; background: #f9fafb; border-radius: 6px; margin-bottom: 8px;">
+                    <div style="font-weight: 600;">Google Meet Connector</div>
+                    <div style="font-size: 13px; color: #6b7280;">
+                        Status: Active | Last sync: 2 hours ago
+                    </div>
+                </div>
+                <div style="padding: 12px; background: #f9fafb; border-radius: 6px; margin-bottom: 8px;">
+                    <div style="font-weight: 600;">Zoom Connector</div>
+                    <div style="font-size: 13px; color: #6b7280;">
+                        Status: Active | Last sync: 1 hour ago
+                    </div>
+                </div>
+                <div style="padding: 12px; background: #f9fafb; border-radius: 6px; margin-bottom: 8px;">
+                    <div style="font-weight: 600;">Microsoft Teams Connector</div>
+                    <div style="font-size: 13px; color: #6b7280;">
+                        Status: Active | Last sync: 3 hours ago
+                    </div>
+                </div>
+                <div style="background: #fef3c7; padding: 12px; border-radius: 6px; margin-top: 16px; font-size: 13px; color: #78350f;">
+                    <i class="fas fa-info-circle"></i> Demo mode: Connectors are simulated. In production, you'll configure real Fivetran connectors.
+                </div>
+            `;
+            
+            document.getElementById('system-health').innerHTML = `
+                <div style="margin-bottom: 16px;">
+                    <strong>System Status:</strong>
+                    <span class="badge badge-positive" style="margin-left: 8px;">HEALTHY</span>
+                </div>
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px;">
+                    <div style="padding: 12px; background: #f0fdf4; border-left: 3px solid #10b981; border-radius: 6px;">
+                        <div style="font-weight: 600;">BigQuery</div>
+                        <div style="font-size: 13px; margin-top: 4px;">
+                            <i class="fas fa-check-circle" style="color: #10b981;"></i> Operational (Demo)
+                        </div>
+                    </div>
+                    <div style="padding: 12px; background: #f0fdf4; border-left: 3px solid #10b981; border-radius: 6px;">
+                        <div style="font-weight: 600;">Elasticsearch</div>
+                        <div style="font-size: 13px; margin-top: 4px;">
+                            <i class="fas fa-check-circle" style="color: #10b981;"></i> Operational (Demo)
+                        </div>
+                    </div>
+                    <div style="padding: 12px; background: #f0fdf4; border-left: 3px solid #10b981; border-radius: 6px;">
+                        <div style="font-weight: 600;">Redis</div>
+                        <div style="font-size: 13px; margin-top: 4px;">
+                            <i class="fas fa-check-circle" style="color: #10b981;"></i> Operational (Demo)
+                        </div>
+                    </div>
+                    <div style="padding: 12px; background: #f0fdf4; border-left: 3px solid #10b981; border-radius: 6px;">
+                        <div style="font-weight: 600;">Vertex AI</div>
+                        <div style="font-size: 13px; margin-top: 4px;">
+                            <i class="fas fa-check-circle" style="color: #10b981;"></i> Operational (Demo)
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        async function loadConnectors() {
+            const container = document.getElementById('connectors-list');
+            container.innerHTML = '<div class="loader"></div>';
+            
+            try {
+                const response = await axios.get(`${API_BASE}/fivetran/connectors`);
+                
+                if (response.data.success && response.data.connectors.length > 0) {
+                    container.innerHTML = response.data.connectors.map(connector => `
+                        <div style="display: flex; justify-content: space-between; align-items: center; padding: 12px; background: #f9fafb; border-radius: 6px; margin-bottom: 8px;">
+                            <div>
+                                <div style="font-weight: 600;">${connector.schema || 'Connector'}</div>
+                                <div style="font-size: 13px; color: #6b7280;">
+                                    Status: ${connector.status?.setup_state || 'unknown'} | 
+                                    Last sync: ${connector.succeeded_at || 'N/A'}
+                                </div>
+                            </div>
+                            <button onclick="syncSingleConnector('${connector.id}')" style="padding: 6px 12px; background: #f59e0b; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 13px;">
+                                <i class="fas fa-sync"></i> Sync
+                            </button>
+                        </div>
+                    `).join('');
+                } else {
+                    container.innerHTML = '<p style="color: #6b7280; text-align: center; padding: 20px;">No connectors configured.</p>';
+                }
+            } catch (error) {
+                console.error('Error loading connectors:', error);
+                container.innerHTML = '<p style="color: #ef4444; text-align: center; padding: 20px;">Error loading connectors.</p>';
+            }
+        }
+
+        async function syncSingleConnector(connectorId) {
+            if (appMode === 'demo') {
+                showNotification('Demo mode: Sync preview', 'info');
+                return;
+            }
+            
+            try {
+                const response = await axios.post(`${API_BASE}/fivetran/connectors/${connectorId}/sync`);
+                
+                if (response.data.success) {
+                    showNotification('Sync triggered successfully', 'success');
+                    setTimeout(loadConnectors, 2000);
+                } else {
+                    showNotification('Error triggering sync', 'error');
+                }
+            } catch (error) {
+                console.error('Error syncing connector:', error);
+                showNotification('Error triggering sync', 'error');
+            }
+        }
+
+        async function syncAllConnectors() {
+            if (appMode === 'demo') {
+                showNotification('Demo mode: All connectors sync preview', 'info');
+                return;
+            }
+            
+            showNotification('Syncing all connectors...', 'info');
+            
+            try {
+                const response = await axios.get(`${API_BASE}/fivetran/connectors`);
+                
+                if (response.data.success) {
+                    const connectors = response.data.connectors;
+                    
+                    for (const connector of connectors) {
+                        await axios.post(`${API_BASE}/fivetran/connectors/${connector.id}/sync`);
+                    }
+                    
+                    showNotification(`Synced ${connectors.length} connectors successfully`, 'success');
+                    setTimeout(loadConnectors, 3000);
+                }
+            } catch (error) {
+                console.error('Error syncing connectors:', error);
+                showNotification('Error syncing connectors', 'error');
+            }
+        }
+
+        function syncConnectors() {
+            showSection('settings');
+            setTimeout(syncAllConnectors, 500);
+        }
+
+        async function loadSystemHealth() {
+            const container = document.getElementById('system-health');
+            container.innerHTML = '<div class="loader"></div>';
+            
+            try {
+                const response = await axios.get(`${API_BASE}/health`);
+                
+                if (response.data) {
+                    const health = response.data;
+                    const services = health.services || {};
+                    
+                    container.innerHTML = `
+                        <div style="margin-bottom: 16px;">
+                            <strong>System Status:</strong>
+                            <span class="badge badge-${health.status === 'healthy' ? 'positive' : 'neutral'}" style="margin-left: 8px;">
+                                ${health.status.toUpperCase()}
+                            </span>
+                        </div>
+                        
+                        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px;">
+                            ${Object.entries(services).map(([service, status]) => `
+                                <div style="padding: 12px; background: ${status ? '#f0fdf4' : '#fef2f2'}; border-left: 3px solid ${status ? '#10b981' : '#ef4444'}; border-radius: 6px;">
+                                    <div style="font-weight: 600; text-transform: capitalize;">${service}</div>
+                                    <div style="font-size: 13px; margin-top: 4px;">
+                                        <i class="fas fa-${status ? 'check-circle' : 'times-circle'}" style="color: ${status ? '#10b981' : '#ef4444'};"></i>
+                                        ${status ? 'Operational' : 'Unavailable'}
+                                    </div>
+                                </div>
+                            `).join('')}
+                        </div>
+                        
+                        <div style="margin-top: 16px; font-size: 12px; color: #6b7280;">
+                            Last checked: ${new Date(health.timestamp).toLocaleString()}
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                console.error('Error loading system health:', error);
+                container.innerHTML = '<p style="color: #ef4444;">Error loading system health.</p>';
+            }
+        }
+
+        async function saveNotificationPreferences(event) {
+            event.preventDefault();
+            
+            if (appMode === 'demo') {
+                showNotification('Demo mode: Preferences saved (simulated)', 'success');
+                return;
+            }
+            
+            const preferences = {
+                email: document.getElementById('pref-email').checked,
+                sms: document.getElementById('pref-sms').checked,
+                whatsapp: document.getElementById('pref-whatsapp').checked,
+                push: document.getElementById('pref-push').checked,
+                reminder_times: [30, 10]
+            };
+            
+            if (preferences.sms || preferences.whatsapp) {
+                preferences.phone = document.getElementById('pref-phone').value;
+            }
+            
+            try {
+                const response = await axios.post(`${API_BASE}/notifications/preferences`, preferences);
+                
+                if (response.data.success) {
+                    showNotification('Notification preferences saved', 'success');
+                } else {
+                    showNotification('Error saving preferences', 'error');
+                }
+            } catch (error) {
+                console.error('Error saving preferences:', error);
+                showNotification('Error saving preferences', 'error');
+            }
+        }
+
+        // ============================================================
+        // UTILITY FUNCTIONS
+        // ============================================================
+
+        function formatDateTime(dateString) {
+            if (!dateString) return 'N/A';
+            const date = new Date(dateString);
+            return date.toLocaleString('en-US', {
+                month: 'short',
+                day: 'numeric',
+                year: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+        }
+
+        function formatDate(dateString) {
+            if (!dateString) return 'N/A';
+            const date = new Date(dateString);
+            return date.toLocaleDateString('en-US', {
+                month: 'short',
+                day: 'numeric',
+                year: 'numeric'
+            });
+        }
+
+        function getSentimentClass(score) {
+            if (score >= 0.6) return 'positive';
+            if (score >= 0.4) return 'neutral';
+            return 'negative';
+        }
+
+        function getSentimentLabel(score) {
+            if (score >= 0.6) return 'Positive';
+            if (score >= 0.4) return 'Neutral';
+            return 'Negative';
+        }
+
+        function showNotification(message, type = 'info') {
+            const notification = document.createElement('div');
+            const colors = {
+                success: '#10b981',
+                error: '#ef4444',
+                info: '#3b82f6',
+                warning: '#f59e0b'
+            };
+            
+            notification.style.cssText = `
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                background: ${colors[type]};
+                color: white;
+                padding: 16px 24px;
+                border-radius: 8px;
+                box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+                z-index: 10000;
+                animation: slideIn 0.3s ease-out;
+                max-width: 400px;
+            `;
+            notification.textContent = message;
+            
+            document.body.appendChild(notification);
+            
+            setTimeout(() => {
+                notification.style.animation = 'slideOut 0.3s ease-out';
+                setTimeout(() => notification.remove(), 300);
+            }, 4000);
+        }
+
+        function logout() {
+            localStorage.removeItem('authToken');
+            localStorage.removeItem('currentUser');
+            localStorage.removeItem('appMode');
+            location.reload();
+        }
+
+        // ============================================================
+        // INITIALIZE ON PAGE LOAD
+        // ============================================================
+
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('MeetSync AI - Application Loaded');
+            
+            // Check if user was previously logged in
+            const savedToken = localStorage.getItem('authToken');
+            const savedUser = localStorage.getItem('currentUser');
+            const savedMode = localStorage.getItem('appMode');
+            
+            if (savedToken && savedUser && savedMode) {
+                console.log('Restoring previous session...');
+                
+                authToken = savedToken;
+                currentUser = JSON.parse(savedUser);
+                appMode = savedMode;
+                
+                if (appMode === 'production') {
+                    axios.defaults.headers.common['Authorization'] = `Bearer ${authToken}`;
+                }
+                
+                // Hide welcome screen and show dashboard
+                document.getElementById('welcome-screen').style.display = 'none';
+                document.getElementById('sidebar').style.display = 'block';
+                document.getElementById('main-content').style.display = 'block';
+                
+                initializeDashboard();
+                
+                showNotification('Welcome back!', 'success');
+            } else {
+                console.log('No previous session found. Showing welcome screen...');
+            }
+        });
+
+        // Add CSS animations
+        const style = document.createElement('style');
+        style.textContent = `
+            @keyframes slideIn {
+                from {
+                    transform: translateX(100%);
+                    opacity: 0;
+                }
+                to {
+                    transform: translateX(0);
+                    opacity: 1;
+                }
+            }
+            
+            @keyframes slideOut {
+                from {
+                    transform: translateX(0);
+                    opacity: 1;
+                }
+                to {
+                    transform: translateX(100%);
+                    opacity: 0;
+                }
+            }
+        `;
+        document.head.appendChild(style);
+    </script>
+</body>
+</html>
