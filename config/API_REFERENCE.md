@@ -1,7 +1,3 @@
-# Path: docs/API_REFERENCE.md
-
-# MeetSync AI - API Reference
-
 Complete API documentation for MeetSync AI platform.
 
 ## Base URL
